@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
 
-project(tmcore LANGUAGES Fortran)
+project(MCV_SW LANGUAGES Fortran)
 
 if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
   set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Ofast")
@@ -57,50 +57,19 @@ include_directories(${CMAKE_BINARY_DIR}/fortran_container)
 add_subdirectory(lib/datetime)
 
 set(source_files
-  src/utils/const_mod.F90
-  src/utils/string_mod.F90
-  src/utils/time_mod.F90
-  src/utils/timer_mod.F90
-  src/utils/log_mod.F90
-  src/utils/io_mod.F90
-  src/utils/history_mod.F90
-  src/utils/sort_mod.F90
-  src/utils/sphere_geometry_mod.F90
-  src/utils/math_mod.F90
-  src/utils/poly_fit_mod.F90
-  src/utils/random_number_mod.F90
-  src/utils/delaunay_voronoi_mod.F90
-  src/core/params_mod.F90
-  src/core/mesh_mod.F90
-  src/core/static_mod.F90
-  src/core/state_mod.F90
-  src/core/tend_mod.F90
-  src/core/operators_mod.F90
-  src/core/adv_schemes/adv_scheme_sg11_mod.F90
-  src/core/adv_schemes/adv_scheme_mod.F90
-  src/core/diag_mod.F90
-  src/core/time_scheme_mod.F90
-  src/core/tmcore_adv_mod.F90
-  src/core/tmcore_swm_mod.F90
-  src/test_cases/test_cases_mod.F90
-  src/test_cases/swm/mountain_zonal_flow_test_mod.F90
-  src/test_cases/swm/steady_geostrophic_flow_test_mod.F90
-  src/test_cases/swm/rossby_haurwitz_wave_test_mod.F90
-  src/test_cases/swm/linearized_rossby_wave_test_mod.F90
-  src/test_cases/adv/cosine_bell_rotation_test_mod.F90
-  src/test_cases/adv/deformation_flow_test_mod.F90
+  src/MCV_SW.f90
+  src/dynamics/module_initialize.f90
+  src/share/module_constants.f90
+  src/share/module_domain.f90
+  src/share/module_parameters.f90
+  src/share/module_projection.f90
 )
 
 set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/.mods")
 
-add_library(tmcore ${source_files})
-target_link_libraries(tmcore fortran_datetime fortran_container netcdf netcdff ${LAPACK_LIBRARIES})
+add_library(MCV_SW ${source_files})
+target_link_libraries(MCV_SW fortran_datetime fortran_container netcdf netcdff ${LAPACK_LIBRARIES})
 
-add_executable(test_tmcore_swm.exe src/core/test_tmcore_swm.F90)
-target_link_libraries(test_tmcore_swm.exe tmcore)
+add_executable(MCV_SW.exe src/core/MCV_SW.f90)
+target_link_libraries(MCV_SW.exe MCV_SW)
 
-add_executable(test_tmcore_adv.exe src/core/test_tmcore_adv.F90)
-target_link_libraries(test_tmcore_adv.exe tmcore)
-
-add_executable(gen_mesh.exe src/tools/gen_mesh.F90)
-target_link_libraries(gen_mesh.exe tmcore)
