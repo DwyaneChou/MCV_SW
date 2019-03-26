@@ -51,18 +51,17 @@ else ()
   endif ()
 endif ()
 
-add_subdirectory(lib/container)
-include_directories(${CMAKE_BINARY_DIR}/fortran_container)
+add_subdirectory(lib/fortran-container)
 
-add_subdirectory(lib/datetime)
+add_subdirectory(lib/fortran-datetime)
 
 set(source_files
   src/MCV_SW.f90
-  src/dynamics/module_initialize.f90
-  src/share/module_constants.f90
-  src/share/module_domain.f90
-  src/share/module_parameters.f90
-  src/share/module_projection.f90
+  src/dynamics/initialize_mod.f90
+  src/share/constants_mod.f90
+  src/share/domain_mod.f90
+  src/share/parameters_mod.f90
+  src/share/projection_mod.f90
 )
 
 set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/.mods")
@@ -70,6 +69,6 @@ set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/.mods")
 add_library(MCV_SW ${source_files})
 target_link_libraries(MCV_SW fortran_datetime fortran_container netcdf netcdff ${LAPACK_LIBRARIES})
 
-add_executable(MCV_SW.exe src/core/MCV_SW.f90)
+add_executable(MCV_SW.exe src/MCV_SW.F90)
 target_link_libraries(MCV_SW.exe MCV_SW)
 

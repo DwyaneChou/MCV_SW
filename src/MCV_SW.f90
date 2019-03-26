@@ -5,7 +5,7 @@
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     program MCV_SW
-      use initialize, only: initMCV
+      use initialize_mod, only: initMCV
       implicit none
       
       integer :: timeStart,timeEnd
@@ -18,5 +18,5 @@
       ! Timing end
       call SYSTEM_CLOCK(timeEnd)
       
-      print*,'It took ',dble(timeEnd-timeStart)/10000.0,' seconds to run this program'
+      print*,'It took ',dble(timeEnd-timeStart)/1000.0,' seconds to run this program'
     end program MCV_SW
