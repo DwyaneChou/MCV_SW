@@ -1,0 +1,29 @@
+&namelist_dyn
+gridsys               ='CUBE',
+verticalstretching    = 1,     ! 0: equidistant, 2-balance or 1-Rossby: not equidistant
+
+max_step              = 2592, 
+dt                    = 500.,
+
+! The following six parameters should be matched within the computational domain.
+nx                    = 12,    ! element number in the x-direction
+ny                    = 12,    ! element number in the y-direction
+nz                    = 13,    ! element number in the z-direction
+
+dx                    = 7.5,  ! Unit: degree 
+dy                    = 7.5,  ! Unit: degree
+dz                    = 100.,  ! Unit: m
+
+! The range of computational domain.
+x_min                 =-45.,  ! Unit: degree
+x_max                 = 45.,  ! Unit: degree
+y_min                 =-45.,  ! Unit: degree
+y_max                 = 45.,  ! Unit: degree
+z_min                 = 0.,     ! Unit: m
+z_max                 = 30000., ! Unit: m
+
+! The ghost cell size
+xhalo                 = 2,
+yhalo                 = 2,
+zhalo                 = 2,
+/

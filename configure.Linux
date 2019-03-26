@@ -1,0 +1,59 @@
+#*****************************************************
+# Configure for MCV-Core
+
+#*****************************************************
+# This file was mannually generated currently.
+# Generally, it is necessary to run configure once, 
+# when the code is first installed.
+######################################################
+
+# Set the suffixes
+.SUFFIXES: .f90 .c .o
+
+#
+# Compiler & Compiler Option
+# 
+FC	=  gfortran
+#DEF     = -DSPHERE -DLONLAT -DRossby 
+#DEF     = -DCARTESIAN
+DEF     = -DSPHERE -DCUBE -DRossby 
+#DEF     = -DSPHERE -DCUBE -DMountainWave 
+#DEF     = -DSPHERE -DCUBE -DMOISTIDEAL -DTranMoist 
+CENDIAN  = 
+#DEBUG   = -debug all -g -traceback -check bounds -check pointers -check all #-fpe3
+#DEBUG   = -nowarn -g -traceback -check bounds -check pointers -check all #-fpe3
+OPTF90   = -O3
+NOPTF90  = -g #-traceback -check bounds -check pointers
+CPP      = -cpp
+
+FFLAGS   = -ffixed-line-length-none -ffree-line-length-none $(DEBUG) $(OPTF90)  $(CPP) $(DEF) -fopenmp -fdefault-real-8
+FFLAGSNO = -ffixed-line-length-none -ffree-line-length-none $(NOPTF90) $(CPP) $(DEF) -fdefault-real-8
+CFLAGS   = -w -DUNDERSCORE
+LDFLAGS  = $(OPTF90) -fopenmp -fdefault-real-8
+LIBMKL   = #-L/opt/intel/mkl/lib -mkl #-lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core
+
+LIBGMRES = -lblas -llapack #-L/software/lapack -lblas -L/software/lapack -llapack
+
+#--------------------------------------------------
+# Target
+#--------------------------------------------------
+$(TARGET): $(MAIN) 
+	$(FC) $(MAIN) $(OBJ_ALL) $(LDFLAGS) $(DEBUG) $(LIBGMRES) $(LIBMKL) -o $@
+
+$(MAIN):$(MAINPRO:.o=.f90) $(OBJ_ALL)
+	$(FC) $(FFLAGS) $(CENDIAN) $(INCMATF) $(GNUPLOTMOD) -c $<
+
+${OBJCOM}:%.o:%.f90
+	$(FC) $(FFLAGS) $(CENDIAN) -c $<
+
+${OBJGRID}:%.o:%.f90
+	$(FC) $(FFLAGS) $(CENDIAN) -c $<
+
+${OBJMCV}:%.o:%.f90
+	$(FC) $(FFLAGS) $(CENDIAN) -c $<
+
+${GMRSOBJ}:%.o:%.f
+	$(FC) $(FFLAGS) $(CENDIAN) -w -c $<
+
+.c.o:
+	$(CC) $(CFLAGS) -c $<
