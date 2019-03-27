@@ -69,6 +69,6 @@ set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/.mods")
 add_library(MCV_SW ${source_files})
 target_link_libraries(MCV_SW fortran_datetime fortran_container netcdf netcdff ${LAPACK_LIBRARIES})
 
-add_executable(MCV_SW.exe src/MCV_SW.F90)
+add_executable(MCV_SW.exe src/MCV_SW.f90)
 target_link_libraries(MCV_SW.exe MCV_SW)
 

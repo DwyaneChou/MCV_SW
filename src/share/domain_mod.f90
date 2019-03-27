@@ -37,8 +37,21 @@ MODULE domain_mod
   real    :: y_max =  45.   !  end location of y-direction
   
   ! MCV basic definiton
-  real, dimension(:,:,:,:), allocatable :: PV   !  Point Values.
-  real, dimension(:,:,:,:), allocatable :: VIA  !  Volume Integrated Average.
+  type cell
+    real, dimension(DOF) :: PV         !  Point Values.
+    real                 :: VIA        !  Volume Integrated Average.
+    real                 :: derivLeft  ! derive on left side
+    real                 :: derivRight ! derive on right side
+  end type cell
+  
+  type fields
+    type(cell) :: u
+    type(cell) :: v
+    type(cell) :: phi
+  end type fields
+  
+  type(fields), allocatable :: state
+  type(fields), allocatable :: tend
   
   ! Jacobian and Metric matrices
   real, dimension(:,:    ), allocatable :: jacobTransform !  jacobian of Transformation

@@ -25,14 +25,14 @@ contains
       a = tan(x)
       b = tan(y)
       
-      lambda = atan2(a,-b)
+      lambda = atan2(a , -b           )
       theta  = atan2(1., sqrt(a*a+b*b))
     case(6)
       a = tan(x)
       b = tan(y)
       
-      lambda = atan2(a,b)
-      theta  = -atan2(1.,sqrt(a*a+b*b))  
+      lambda =  atan2(a , b            )
+      theta  = -atan2(1., sqrt(a*a+b*b))  
     end select
 
     return
@@ -88,9 +88,10 @@ contains
     real    :: a(2,2)
   ! -------------------------
           
-    call matrixA(a,k,lambda,theta)      
-    sv1=a(1,1)*contrav1+a(1,2)*contrav2
-    sv2=a(2,1)*contrav1+a(2,2)*contrav2
+    call matrixA(a,k,lambda,theta)
+    
+    sv1 = a(1,1) * contrav1 + a(1,2) * contrav2
+    sv2 = a(2,1) * contrav1 + a(2,2) * contrav2
 
     return
   end subroutine contravProjPlane2Sphere
@@ -268,9 +269,9 @@ contains
     real                 :: rho
   ! -----------------------
 
-    rho = sqrt(1+tan(x)**2+tan(y)**2)
+    rho = sqrt(1 + tan(x)**2 + tan(y)**2)
     
-    jab = radius**2 /(cos(x)**2 * cos(y)**2 * rho**3)
+    jab = radius**2 /( cos(x)**2 * cos(y)**2 * rho**3 )
 
     return
   end subroutine computeJacobian
