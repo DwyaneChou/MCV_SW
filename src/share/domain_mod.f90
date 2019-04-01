@@ -1,6 +1,6 @@
 MODULE domain_mod
-  use constants_mod  , only: DOF, D2R
-  use parameters_mod , only: dt, dx, dy, xhalo, yhalo
+  use constants_mod  , only: DOF, D2R, radius
+  use parameters_mod , only: dt, dx, dy, xhalo, yhalo, integral_scheme
   
   implicit none
   
@@ -29,6 +29,8 @@ MODULE domain_mod
   integer :: Nlambda  ! grid points in the lambda direction
   integer :: Ntheta   ! grid points in the theta direction
   
+  integer :: nIntegralSubSteps ! number of integral substeps in temporal integration scheme
+  
   integer, parameter :: Nf = 6           ! Number of cube faces
   
   real    :: x_min = -45.   !  start location of x-direction
@@ -38,20 +40,38 @@ MODULE domain_mod
   
   ! MCV basic definiton
   type cell
-    real, dimension(DOF) :: PV         !  Point Values.
-    real                 :: VIA        !  Volume Integrated Average.
-    real                 :: derivLeft  ! derive on left side
-    real                 :: derivRight ! derive on right side
+    real, dimension(DOF,DOF) :: PV         ! Point Values.
+    real                     :: VIA        ! Volume Integrated Average.
+    real, dimension(DOF)     :: VIA_x      ! VIA on x direction
+    real, dimension(DOF)     :: VIA_y      ! VIA on y direction
   end type cell
   
   type fields
-    type(cell) :: u
-    type(cell) :: v
-    type(cell) :: phi
+    type(cell), dimension(:,:,:), allocatable :: U               ! covariant u-wind component, the 1st dimension is the patch index, 
+                                                                 !                             the 2nd dimension is the x direcion index, 
+                                                                 !                             the 3rd dimension is the y direcion index
+    type(cell), dimension(:,:,:), allocatable :: V               ! covariant v-wind component, dimension setting is the same as U
+    type(cell), dimension(:,:,:), allocatable :: contraU         ! contravariant u-wind component, dimension setting is the same as U
+    type(cell), dimension(:,:,:), allocatable :: contraV         ! contravariant v-wind component, dimension setting is the same as U
+    type(cell), dimension(:,:,:), allocatable :: phi             ! geopotential height, dimension setting is the same as covariantU
+    
+    type(cell), dimension(:,:,:), allocatable :: zonalWind       ! contravariant u-wind component, dimension setting is the same as U
+    type(cell), dimension(:,:,:), allocatable :: meridionalWind  ! contravariant v-wind component, dimension setting is the same as U
   end type fields
   
-  type(fields), allocatable :: state
-  type(fields), allocatable :: tend
+  type(fields), dimension(:), allocatable :: state ! allocated by n time points, which is used by temporal integration schemes
+  type(fields), dimension(:), allocatable :: tend  ! allocated by n time points, which is used by temporal integration schemes
+  
+  type fitOnCell ! 1st order derivatives determined by polynominal fitting
+    real, dimension(DOF) :: derivLeft_x
+    real, dimension(DOF) :: derivRight_x
+    real, dimension(DOF) :: derivTop_y
+    real, dimension(DOF) :: derivBottom_y
+  end type fitOnCell
+  
+  type(fitOnCell), dimension(:,:,:), allocatable :: fitU
+  type(fitOnCell), dimension(:,:,:), allocatable :: fitV
+  type(fitOnCell), dimension(:,:,:), allocatable :: fitPhi
   
   ! Jacobian and Metric matrices
   real, dimension(:,:    ), allocatable :: jacobTransform !  jacobian of Transformation
@@ -63,27 +83,37 @@ MODULE domain_mod
   real   , dimension(:,:,:,:), allocatable :: ghostCellPosition
   
   ! coordinate
-  real, dimension(:), allocatable :: x
-  real, dimension(:), allocatable :: y
-  real, dimension(:), allocatable :: xc
-  real, dimension(:), allocatable :: yc
+  type mesh_info
+    real, dimension(DOF,DOF) :: alpha              ! central angle on x direction for each patch
+    real, dimension(DOF,DOF) :: beta               ! central angle on y direction for each patch
+    real, dimension(DOF,DOF) :: x                  ! length of the arc on x direction for each patch, x = radius * alpha
+    real, dimension(DOF,DOF) :: y                  ! length of the arc on y direction for each patch, y = radius * beta
+    real, dimension(DOF,DOF) :: lon                ! longitude on sphere coordinate
+    real, dimension(DOF,DOF) :: lat                ! latitude on sphere coordinate
+    
+    real, dimension(2,2,DOF,DOF) :: metricTensor   ! horizontal metric Tensor, which transform covariant vectors to contravariant vectors
+    real, dimension(2,2,DOF,DOF) :: jacobTransform ! jacobian of Transformation, which transform the contravariant vectors to zonal vector and meridional vector
+  end type mesh_info
+  
+  type(mesh_info), dimension(:,:,:), allocatable :: mesh
   
   contains
   
   subroutine initDomain
+    integer :: i,j
     
     ! Check if dx and dy are avaliable to achieve the integral element number
-    if( mod(x_max - x_min, dx) /= 0 )then
-        stop '90 divide dx must be integer, choose another dx'
+    if( (x_max - x_min)/dx - int((x_max - x_min)/dx) /= 0. )then
+      stop '90 divide dx must be integer, choose another dy'
     end if
     
-    if( mod(y_max - y_min, dy) /= 0 )then
+    if( (y_max - y_min)/dy - int((y_max - y_min)/dy) /= 0. )then
         stop '90 divide dy must be integer, choose another dy'
     end if
     
     ! Calculate element numbers on x/y direction
-    Nx = (x_max - x_min)/dx + 1
-    Ny = (y_max - y_min)/dy + 1
+    Nx = int((x_max - x_min)/dx) + 1
+    Ny = int((y_max - y_min)/dy) + 1
     
     ! Calculate PV number on x/y direction
     nPVx = Nx * (DOF - 1) + 1
@@ -118,6 +148,36 @@ MODULE domain_mod
     x_max = x_max * D2R
     y_min = y_min * D2R
     y_max = y_max * D2R
+    
+    ! Allocate the data structure
+    if(trim(adjustl(integral_scheme)) == 'RK4')then
+      nIntegralSubSteps = 4
+    else
+      stop 'Unknown integral scheme, please select from RK4 ...'
+    endif
+    
+    allocate( state(nIntegralSubSteps) )
+    allocate( tend (nIntegralSubSteps) )
+    
+    do i = 1,nIntegralSubSteps
+      allocate( state(i)%U             (Nf, ics:ice, jcs:jce) )
+      allocate( state(i)%V             (Nf, ics:ice, jcs:jce) )
+      allocate( state(i)%contraU       (Nf, ics:ice, jcs:jce) )
+      allocate( state(i)%contraV       (Nf, ics:ice, jcs:jce) )
+      allocate( state(i)%phi           (Nf, ics:ice, jcs:jce) )
+      allocate( state(i)%zonalWind     (Nf, ics:ice, jcs:jce) )
+      allocate( state(i)%meridionalWind(Nf, ics:ice, jcs:jce) )
+      
+      allocate( tend (i)%U      (Nf, ics:ice, jcs:jce) )
+      allocate( tend (i)%V      (Nf, ics:ice, jcs:jce) )
+      !allocate( tend (i)%contraU(Nf, ics:ice, jcs:jce) )
+      !allocate( tend (i)%contraV(Nf, ics:ice, jcs:jce) )
+      allocate( tend (i)%phi    (Nf, ics:ice, jcs:jce) )
+    enddo
+    
+    allocate( fitU  (Nf, ics:ice, jcs:jce) )
+    allocate( fitV  (Nf, ics:ice, jcs:jce) )
+    allocate( fitPhi(Nf, ics:ice, jcs:jce) )
     
   end subroutine initDomain
   

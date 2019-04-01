@@ -10,6 +10,8 @@ module parameters_mod
   real    :: dt               ! time step
   integer :: history_interval ! output interval in seconds
   
+  character*200 :: integral_scheme
+  
   ! Domain
   real    :: dx     !  grid-spacing in the x-direction
   real    :: dy     !  grid-spacing in the y-direction
@@ -26,7 +28,8 @@ module parameters_mod
                            run_hours        ,&
                            run_minutes      ,&
                            run_seconds      ,&
-                           history_interval
+                           history_interval ,&
+                           integral_scheme
   
   namelist /domain/        dx          ,&
                            dy          ,&
@@ -57,6 +60,7 @@ module parameters_mod
     run_minutes      = 0
     run_seconds      = 0
     history_interval = 3600
+    integral_scheme  = 'RK4'
     
     call readNamelist
     

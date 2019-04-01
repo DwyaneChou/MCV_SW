@@ -51,9 +51,9 @@ else ()
   endif ()
 endif ()
 
-add_subdirectory(lib/fortran-container)
+#add_subdirectory(lib/fortran-container)
 
-add_subdirectory(lib/fortran-datetime)
+#add_subdirectory(lib/fortran-datetime)
 
 set(source_files
   src/MCV_SW.f90
@@ -67,7 +67,8 @@ set(source_files
 set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/.mods")
 
 add_library(MCV_SW ${source_files})
-target_link_libraries(MCV_SW fortran_datetime fortran_container netcdf netcdff ${LAPACK_LIBRARIES})
+target_link_libraries(MCV_SW netcdf netcdff ${LAPACK_LIBRARIES})
+#target_link_libraries(MCV_SW fortran_datetime fortran_container netcdf netcdff ${LAPACK_LIBRARIES})
 
 add_executable(MCV_SW.exe src/MCV_SW.f90)
 target_link_libraries(MCV_SW.exe MCV_SW)

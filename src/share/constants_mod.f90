@@ -4,7 +4,7 @@ MODULE constants_mod
   INTEGER,PARAMETER :: DOF       = 3    ! Degree of Freedoms within a 1D element
   INTEGER,PARAMETER :: NumVAR    = 3    ! numbers of variables
   
-  REAL,PARAMETER    :: g         = 9.80616
+  REAL,PARAMETER    :: gravity   = 9.80616
   REAL,PARAMETER    :: P0        = 1.E5
   REAL,PARAMETER    :: GAMMA     = 1.4
   REAL,PARAMETER    :: Rd        = 287.
