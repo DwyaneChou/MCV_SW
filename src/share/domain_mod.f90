@@ -76,7 +76,6 @@ MODULE domain_mod
   ! Jacobian and Metric matrices
   real, dimension(:,:    ), allocatable :: jacobTransform !  jacobian of Transformation
   real, dimension(:,:,:  ), allocatable :: metricTensor   !  horizontal metrics Tensor
-  real, dimension(:,:,:,:), allocatable :: compositeJacob !  composite Jacobian of transformation
   
   ! ghost cell location
   integer, dimension(:,:,:,:), allocatable :: ghostCellIndex
