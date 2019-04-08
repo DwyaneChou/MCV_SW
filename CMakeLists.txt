@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
 project(MCV_SW LANGUAGES Fortran)
 
 if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Ofast")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Ofast -r8 -parallel")
   if (CMAKE_BUILD_TYPE MATCHES DEBUG)
     set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -g -gdwarf -Og -traceback -check all")
   endif ()
@@ -39,17 +39,17 @@ else ()
   endif ()
 endif ()
 
-if (DEFINED ENV{LAPACK_ROOT})
-  include_directories("$ENV{LAPACK_ROOT}")
-  link_directories("$ENV{LAPACK_ROOT}")
-  set(LAPACK_LINKER_FLAGS "-llapack")
-else ()
-  find_package(LAPACK REQUIRED)
-  if (NOT LAPACK_FOUND)
-    message(DEBUG "Unable to find LAPACK library, use internal routines.")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -DNOLAPACK")
-  endif ()
-endif ()
+#if (DEFINED ENV{LAPACK_ROOT})
+#  include_directories("$ENV{LAPACK_ROOT}")
+#  link_directories("$ENV{LAPACK_ROOT}")
+#  set(LAPACK_LINKER_FLAGS "-llapack")
+#else ()
+#  find_package(LAPACK REQUIRED)
+#  if (NOT LAPACK_FOUND)
+#    message(DEBUG "Unable to find LAPACK library, use internal routines.")
+#    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -DNOLAPACK")
+#  endif ()
+#endif ()
 
 #add_subdirectory(lib/fortran-container)
 
@@ -58,10 +58,13 @@ endif ()
 set(source_files
   src/MCV_SW.f90
   src/dynamics/initialize_mod.f90
+  src/dynamics/test_case_mod.f90
   src/share/constants_mod.f90
-  src/share/domain_mod.f90
   src/share/parameters_mod.f90
+  src/share/mesh_mod.f90
+  src/share/domain_mod.f90
   src/share/projection_mod.f90
+  src/share/ghost_mod.f90
 )
 
 set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/.mods")

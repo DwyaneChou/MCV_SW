@@ -1,8 +1,8 @@
 MODULE constants_mod
     
   implicit none
-  INTEGER,PARAMETER :: DOF       = 3    ! Degree of Freedoms within a 1D element
-  INTEGER,PARAMETER :: NumVAR    = 3    ! numbers of variables
+  INTEGER,PARAMETER :: DOF       = 4    ! Degree of Freedoms within a 1D element
+  INTEGER,PARAMETER :: numVAR    = 3    ! numbers of variables
   
   REAL,PARAMETER    :: gravity   = 9.80616
   REAL,PARAMETER    :: P0        = 1.E5
