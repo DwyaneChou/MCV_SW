@@ -165,14 +165,14 @@ MODULE mesh_mod
           
           PVmesh%sqrtG(iPV, jPV, iPatch) = radius**2/((1 + tanx**2 + tany**2)**(3./2.) * cosx**2 * cosy**2)
           
-          PVmesh%dsqrtGdx(iPV, jPV, iPatch) = radius * secy**2 * tanx * (-3*secx**4 + 2*secx**2 * (secy**2 + tanx**2)) / (secy**2 + tanx**2)**(5/2)
-          PVmesh%dsqrtGdy(iPV, jPV, iPatch) = radius * secx**2 * tany * (   secy**4 - 2*secy**2 *  tanx**2           ) / (secy**2 + tanx**2)**(5/2)
-          PVmesh%dG11dx  (iPV, jPV, iPatch) = 2. * sinx * cosx * tany**2 / radius**3
-          PVmesh%dG12dx  (iPV, jPV, iPatch) = siny * (cosx**2 * secy + 0.5 * (3. + 2. * cosx**2 - 1.) * cosy * tanx**2 - sinx**2 * siny * tany) / radius**3
-          PVmesh%dG22dx  (iPV, jPV, iPatch) = 2. * cosy**2 * secx**2 * tanx / radius**3
-          PVmesh%dG11dy  (iPV, jPV, iPatch) = 2. * cosx**2 * secy**2 * tany / radius**3
-          PVmesh%dG12dy  (iPV, jPV, iPatch) = sinx * (cosx * secy**2 + (2. * cosx**2 - 1.) * sinx * tanx) / radius**3
-          PVmesh%dG22dy  (iPV, jPV, iPatch) = 2. * siny * cosy * tanx**2 / radius**3
+          PVmesh%dsqrtGdx(iPV, jPV, iPatch) = radius**2 * secy**2 * tanx * (-3*secx**4 + 2*secx**2 * (secy**2 + tanx**2)) / (secy**2 + tanx**2)**(5/2)
+          PVmesh%dsqrtGdy(iPV, jPV, iPatch) = radius**2 * secx**2 * tany * (   secy**4 - 2*secy**2 *  tanx**2           ) / (secy**2 + tanx**2)**(5/2)
+          PVmesh%dG11dx  (iPV, jPV, iPatch) = 2. * sinx * cosx * tany**2 / radius**2
+          PVmesh%dG12dx  (iPV, jPV, iPatch) = siny * (cosx**2 * secy + 0.5 * (3. + 2. * cosx**2 - 1.) * cosy * tanx**2 - sinx**2 * siny * tany) / radius**2
+          PVmesh%dG22dx  (iPV, jPV, iPatch) = 2. * cosy**2 * secx**2 * tanx / radius**2
+          PVmesh%dG11dy  (iPV, jPV, iPatch) = 2. * cosx**2 * secy**2 * tany / radius**2
+          PVmesh%dG12dy  (iPV, jPV, iPatch) = sinx * (cosx * secy**2 + (2. * cosx**2 - 1.) * sinx * tanx) / radius**2
+          PVmesh%dG22dy  (iPV, jPV, iPatch) = 2. * siny * cosy * tanx**2 / radius**2
           
           !print*,PVmesh%dsqrtGdx(iPV, jPV, iPatch)/PVmesh%sqrtG (iPV, jPV, iPatch)
           !print*,PVmesh%dG11dx  (iPV, jPV, iPatch),PVmesh%dG11dy(iPV, jPV, iPatch)
@@ -181,6 +181,9 @@ MODULE mesh_mod
         end do
       end do
     end do
+    print*,minval(PVmesh%dG11dx),maxval(PVmesh%dG11dy)
+    print*,minval(PVmesh%dG12dx),maxval(PVmesh%dG12dy)
+    print*,minval(PVmesh%dG22dx),maxval(PVmesh%dG22dy)
     
     ! Calculate mesh infomation on VIA
     do iPatch = ifs, ife

@@ -39,21 +39,11 @@ else ()
   endif ()
 endif ()
 
-#if (DEFINED ENV{LAPACK_ROOT})
-#  include_directories("$ENV{LAPACK_ROOT}")
-#  link_directories("$ENV{LAPACK_ROOT}")
-#  set(LAPACK_LINKER_FLAGS "-llapack")
-#else ()
-#  find_package(LAPACK REQUIRED)
-#  if (NOT LAPACK_FOUND)
-#    message(DEBUG "Unable to find LAPACK library, use internal routines.")
-#    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -DNOLAPACK")
-#  endif ()
-#endif ()
+add_subdirectory(lib/container)
 
-#add_subdirectory(lib/fortran-container)
+add_subdirectory(lib/fiona)
 
-#add_subdirectory(lib/fortran-datetime)
+add_subdirectory(lib/datetime)
 
 set(source_files
   src/MCV_SW.f90
@@ -67,11 +57,8 @@ set(source_files
   src/share/ghost_mod.f90
 )
 
-set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/.mods")
-
 add_library(MCV_SW ${source_files})
-target_link_libraries(MCV_SW netcdf netcdff ${LAPACK_LIBRARIES})
-#target_link_libraries(MCV_SW fortran_datetime fortran_container netcdf netcdff ${LAPACK_LIBRARIES})
+target_link_libraries(MCV_SW netcdf netcdff fiona)
 
 add_executable(MCV_SW.exe src/MCV_SW.f90)
 target_link_libraries(MCV_SW.exe MCV_SW)

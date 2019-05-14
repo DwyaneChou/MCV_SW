@@ -1,14 +1,20 @@
 &time_settings
-run_days    = 33
-run_hours   = 0
-run_minutes = 0
-run_seconds = 0
-dt          = 300
+run_days         = 33
+run_hours        = 0
+run_minutes      = 0
+run_seconds      = 0
+dt               = 300
+history_interval = 3600,
+integral_scheme  = 'RK4'
+/
+
+&case_select
+case_num    = 2,
 /
 
 &domain
-dx          = 3,  ! Unit: degree 
-dy          = 3,  ! Unit: degree
+dx          = 1,  ! Unit: degree 
+dy          = 1,  ! Unit: degree
 
 
 xhalo       = 1,  ! The ghost cell size
