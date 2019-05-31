@@ -47,14 +47,15 @@ add_subdirectory(lib/datetime)
 
 set(source_files
   src/MCV_SW.f90
-  src/dynamics/initialize_mod.f90
-  src/dynamics/test_case_mod.f90
-  src/share/constants_mod.f90
-  src/share/parameters_mod.f90
-  src/share/mesh_mod.f90
-  src/share/domain_mod.f90
-  src/share/projection_mod.f90
-  src/share/ghost_mod.f90
+  src/constants_mod.f90
+  src/parameters_mod.f90
+  src/mesh_mod.f90
+  src/stat_mod.f90
+  src/tend_mod.f90
+  src/projection_mod.f90
+  src/ghost_mod.f90
+  src/test_case_mod.f90
+  src/output_mod.f90
 )
 
 add_library(MCV_SW ${source_files})

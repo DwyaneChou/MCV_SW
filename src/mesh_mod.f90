@@ -1,0 +1,203 @@
+MODULE mesh_mod
+  use constants_mod
+  use parameters_mod
+  use projection_mod
+  
+  implicit none
+  
+  ! coordinate
+  type mesh_info
+    real, dimension(:,:,:    ), allocatable :: xP        ! central angle on x direction for points on each patch, unit: radian
+    real, dimension(:,:,:    ), allocatable :: yP        ! central angle on y direction for points on each patch, unit: radian
+    real, dimension(:,:,:    ), allocatable :: xC        ! central angle on x direction for cells on each patch, unit: radian
+    real, dimension(:,:,:    ), allocatable :: yC        ! central angle on y direction for cells on each patch, unit: radian
+    real, dimension(:,:,:    ), allocatable :: lonP      ! longitude on points
+    real, dimension(:,:,:    ), allocatable :: latP      ! latitude on points
+    real, dimension(:,:,:    ), allocatable :: lonC      ! longitude on cells
+    real, dimension(:,:,:    ), allocatable :: latC      ! latitude on cells
+    real, dimension(:,:,:    ), allocatable :: sqrtG    ! jacobian of Transformation, sqrt(G)
+    real, dimension(:,:,:,:,:), allocatable :: matrixG  ! horizontal metric Tensor, which transform covariant vectors to contravariant vectors
+    real, dimension(:,:,:,:,:), allocatable :: matrixIG ! horizontal metric Tensor, which transform contravariant vectors to covariant vectors
+    real, dimension(:,:,:,:,:), allocatable :: matrixA  ! horizontal metric Tensor, which transform 
+    real, dimension(:,:,:,:,:), allocatable :: matrixIA ! horizontal metric Tensor, which transform 
+    real, dimension(:,:,:    ), allocatable :: dsqrtGdx ! \partial \sqrt(G) / \partial x
+    real, dimension(:,:,:    ), allocatable :: dsqrtGdy ! \partial \sqrt(G) / \partial y
+    real, dimension(:,:,:    ), allocatable :: dG11dx   ! \partial \G11     / \partial x
+    real, dimension(:,:,:    ), allocatable :: dG11dy   ! \partial \G11     / \partial y
+    real, dimension(:,:,:    ), allocatable :: dG12dx   ! \partial \G12     / \partial x
+    real, dimension(:,:,:    ), allocatable :: dG12dy   ! \partial \G12     / \partial y
+    real, dimension(:,:,:    ), allocatable :: dG22dx   ! \partial \G22     / \partial x
+    real, dimension(:,:,:    ), allocatable :: dG22dy   ! \partial \G22     / \partial y
+    
+    real, dimension(:,:,:    ), allocatable :: sinx    ! trigonometric function
+    real, dimension(:,:,:    ), allocatable :: cosx    ! trigonometric function
+    real, dimension(:,:,:    ), allocatable :: tanx    ! trigonometric function
+    real, dimension(:,:,:    ), allocatable :: cotx    ! trigonometric function
+    real, dimension(:,:,:    ), allocatable :: secx    ! trigonometric function
+    real, dimension(:,:,:    ), allocatable :: cscx    ! trigonometric function
+    
+    real, dimension(:,:,:    ), allocatable :: siny    ! trigonometric function
+    real, dimension(:,:,:    ), allocatable :: cosy    ! trigonometric function
+    real, dimension(:,:,:    ), allocatable :: tany    ! trigonometric function
+    real, dimension(:,:,:    ), allocatable :: coty    ! trigonometric function
+    real, dimension(:,:,:    ), allocatable :: secy    ! trigonometric function
+    real, dimension(:,:,:    ), allocatable :: cscy    ! trigonometric function
+  end type mesh_info
+  
+  ! PV index on Cell
+  real   , dimension(:,:,:,:), allocatable :: pvXIndexOnCell ! PV index on Cell in x direction
+  real   , dimension(:,:,:,:), allocatable :: pvYIndexOnCell ! PV index on Cell in y direction
+  
+  type(mesh_info) :: mesh
+  
+  contains
+  
+  subroutine initMesh
+    integer :: iPV, jPV, iCell, jCell, iPatch, iVar, iDOF, jDOF
+    integer :: iPVs, iPVe, jPVs, jPVe
+    real    :: rho
+    real    :: sinx, cosx, secx, cscx, tanx, cotx, &
+               siny, cosy, secy, cscy, tany, coty
+    
+    ! Allocate arrays in structures
+    allocate( mesh%xP       (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%yP       (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%lonP     (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%latP     (      ips:ipe, jps:jpe, ifs:ife) )
+    
+    allocate( mesh%xC       (      ics:ice, jcs:jce, ifs:ife) )
+    allocate( mesh%yC       (      ics:ice, jcs:jce, ifs:ife) )
+    allocate( mesh%lonC     (      ics:ice, jcs:jce, ifs:ife) )
+    allocate( mesh%latC     (      ics:ice, jcs:jce, ifs:ife) )
+    
+    allocate( mesh%sqrtG    (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%matrixG  (2, 2, ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%matrixIG (2, 2, ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%matrixA  (2, 2, ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%matrixIA (2, 2, ips:ipe, jps:jpe, ifs:ife) )
+    
+    allocate( mesh%dsqrtGdx (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%dsqrtGdy (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%dG11dx   (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%dG11dy   (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%dG12dx   (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%dG12dy   (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%dG22dx   (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%dG22dy   (      ips:ipe, jps:jpe, ifs:ife) )
+    
+    allocate( mesh%sinx     (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%cosx     (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%tanx     (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%cotx     (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%secx     (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%cscx     (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%siny     (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%cosy     (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%tany     (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%coty     (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%secy     (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%cscy     (      ips:ipe, jps:jpe, ifs:ife) )
+    
+    allocate( pvXIndexOnCell(DOF, ics:ice, jcs:jce, ifs:ife) )
+    allocate( pvYIndexOnCell(DOF, ics:ice, jcs:jce, ifs:ife) )
+    
+    ! Calculate the pv index on cell
+    do iPatch = ifs, ife
+      do jCell = jcs, jce
+        do iCell = ics, ice
+          do iDOF= 1, DOF
+            pvXIndexOnCell(iDOF, iCell, jCell, iPatch) = (iCell - 1)*DOF + (iDOF - iCell + 1)
+          enddo
+          
+          do jDOF = 1, DOF
+            pvYIndexOnCell(jDOF, iCell, jCell, iPatch) = (jCell - 1)*DOF + (jDOF - jCell + 1)
+          enddo
+        end do
+      end do
+    end do
+    
+    ! Calculate mesh infomation on PV
+    do iPatch = ifs, ife
+      do jPV = jps, jpe
+        do iPV = ips, ipe
+          mesh%xP  (iPV, jPV, iPatch) = (iPV - 1) * dx/(DOF - 1) + x_min
+          mesh%yP  (iPV, jPV, iPatch) = (jPV - 1) * dy/(DOF - 1) + y_min
+          
+          call pointProjPlane2Sphere(mesh%lonP(iPV, jPV, iPatch), mesh%latP(iPV, jPV, iPatch), &
+                                     mesh%xP  (iPV, jPV, iPatch), mesh%yP  (iPV, jPV, iPatch), iPatch)
+          
+          mesh%sinx(iPV, jPV, iPatch) = sin(mesh%xP(iPV, jPV, iPatch))
+          mesh%cosx(iPV, jPV, iPatch) = cos(mesh%xP(iPV, jPV, iPatch))
+          mesh%tanx(iPV, jPV, iPatch) = tan(mesh%xP(iPV, jPV, iPatch))
+          mesh%cotx(iPV, jPV, iPatch) = 1. / mesh%tanx(iPV, jPV, iPatch)
+          mesh%secx(iPV, jPV, iPatch) = 1. / mesh%cosx(iPV, jPV, iPatch)
+          mesh%cscx(iPV, jPV, iPatch) = 1. / mesh%sinx(iPV, jPV, iPatch)
+          mesh%siny(iPV, jPV, iPatch) = sin(mesh%yP(iPV, jPV, iPatch))
+          mesh%cosy(iPV, jPV, iPatch) = cos(mesh%yP(iPV, jPV, iPatch))
+          mesh%tany(iPV, jPV, iPatch) = tan(mesh%yP(iPV, jPV, iPatch))
+          mesh%coty(iPV, jPV, iPatch) = 1. / mesh%tany(iPV, jPV, iPatch)
+          mesh%secy(iPV, jPV, iPatch) = 1. / mesh%cosy(iPV, jPV, iPatch)
+          mesh%cscy(iPV, jPV, iPatch) = 1. / mesh%siny(iPV, jPV, iPatch)
+          
+          call calc_matrixG (mesh%matrixG (:, :, iPV, jPV, iPatch), mesh%xP  (iPV, jPV, iPatch), mesh%yP  (iPV, jPV, iPatch))
+          call calc_matrixIG(mesh%matrixIG(:, :, iPV, jPV, iPatch), mesh%xP  (iPV, jPV, iPatch), mesh%yP  (iPV, jPV, iPatch))
+          call calc_matrixA (mesh%matrixA (:, :, iPV, jPV, iPatch), mesh%lonP(iPV, jPV, iPatch), mesh%latP(iPV, jPV, iPatch), iPatch)
+          call calc_matrixIA(mesh%matrixIA(:, :, iPV, jPV, iPatch), mesh%lonP(iPV, jPV, iPatch), mesh%latP(iPV, jPV, iPatch), iPatch)
+          call calc_Jacobian(mesh%sqrtG   (      iPV, jPV, iPatch), mesh%xP  (iPV, jPV, iPatch), mesh%yP  (iPV, jPV, iPatch))
+          
+          sinx = mesh%sinx(iPV, jPV, iPatch)
+          cosx = mesh%cosx(iPV, jPV, iPatch)
+          tanx = mesh%tanx(iPV, jPV, iPatch)
+          cotx = mesh%cotx(iPV, jPV, iPatch)
+          secx = mesh%secx(iPV, jPV, iPatch)
+          cscx = mesh%cscx(iPV, jPV, iPatch)
+          siny = mesh%siny(iPV, jPV, iPatch)
+          cosy = mesh%cosy(iPV, jPV, iPatch)
+          tany = mesh%tany(iPV, jPV, iPatch)
+          coty = mesh%coty(iPV, jPV, iPatch)
+          secy = mesh%secy(iPV, jPV, iPatch)
+          cscy = mesh%cscy(iPV, jPV, iPatch)
+          
+          mesh%dsqrtGdx(iPV, jPV, iPatch) = radius**2 * secy**2 * tanx * (-3*secx**4 + 2*secx**2 * (secy**2 + tanx**2)) / (secy**2 + tanx**2)**(5/2)
+          mesh%dsqrtGdy(iPV, jPV, iPatch) = radius**2 * secx**2 * tany * (   secy**4 - 2*secy**2 *  tanx**2           ) / (secy**2 + tanx**2)**(5/2)
+          mesh%dG11dx  (iPV, jPV, iPatch) = 2. * sinx * cosx * tany**2 / radius**2
+          mesh%dG12dx  (iPV, jPV, iPatch) = siny * (cosx**2 * secy + 0.5 * (3. + 2. * cosx**2 - 1.) * cosy * tanx**2 - sinx**2 * siny * tany) / radius**2
+          mesh%dG22dx  (iPV, jPV, iPatch) = 2. * cosy**2 * secx**2 * tanx / radius**2
+          mesh%dG11dy  (iPV, jPV, iPatch) = 2. * cosx**2 * secy**2 * tany / radius**2
+          mesh%dG12dy  (iPV, jPV, iPatch) = sinx * (cosx * secy**2 + (2. * cosx**2 - 1.) * sinx * tanx) / radius**2
+          mesh%dG22dy  (iPV, jPV, iPatch) = 2. * siny * cosy * tanx**2 / radius**2
+        end do
+      end do
+    end do
+    
+    print*,''
+    print*,'max value of dG11dx  : ',maxval(abs(mesh%dG11dx))
+    print*,'max value of dG11dy  : ',maxval(abs(mesh%dG11dy))
+    print*,'max value of dG12dx  : ',maxval(abs(mesh%dG12dx))
+    print*,'max value of dG12dy  : ',maxval(abs(mesh%dG12dy))
+    print*,'max value of dG22dx  : ',maxval(abs(mesh%dG22dx))
+    print*,'max value of dG22dy  : ',maxval(abs(mesh%dG22dy))
+    
+    ! Calculate mesh infomation on VIA
+    do iPatch = ifs, ife
+      do jCell = jcs, jce
+        do iCell = ics, ice
+          iPVs = pvXIndexOnCell(1  , iCell, jCell, iPatch)
+          iPVe = pvXIndexOnCell(DOF, iCell, jCell, iPatch)
+          jPVs = pvYIndexOnCell(1  , iCell, jCell, iPatch)
+          jPVe = pvYIndexOnCell(DOF, iCell, jCell, iPatch)
+          
+          mesh%xC  (iCell, jCell, iPatch) = 0.5 * (mesh%xP(iPVs, 1   , iPatch) + mesh%xP(iPVe, 1   , iPatch))
+          mesh%yC  (iCell, jCell, iPatch) = 0.5 * (mesh%yP(1   , jPVs, iPatch) + mesh%yP(1   , jPVe, iPatch))
+          
+          call pointProjPlane2Sphere(mesh%lonC(iCell, jCell, iPatch), mesh%latC(iCell, jCell, iPatch), &
+                                     mesh%xC  (iCell, jCell, iPatch), mesh%yC  (iCell, jCell, iPatch), iPatch)
+        end do
+      end do
+    end do
+    
+  end subroutine initMesh
+  
+
+END MODULE mesh_mod
+
