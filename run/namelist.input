@@ -3,8 +3,8 @@ run_days         = 33
 run_hours        = 0
 run_minutes      = 0
 run_seconds      = 0
-dt               = 300
-history_interval = 3600,
+dt               = 60
+history_interval = 360,
 integral_scheme  = 'RK4'
 /
 

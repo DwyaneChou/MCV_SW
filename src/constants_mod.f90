@@ -10,6 +10,6 @@ MODULE constants_mod
   REAL,PARAMETER    :: radius    = 6371220.
   REAL,PARAMETER    :: D2R       = PI/180.    ! convert degree into radian
   REAL,PARAMETER    :: R2D       = 180./PI    ! convert radian into degree
-  REAL,PARAMETER    :: OMEGA     = 7.292E-5
+  REAL,PARAMETER    :: Omega     = 7.292E-5
 
 END MODULE constants_mod

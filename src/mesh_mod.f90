@@ -29,6 +29,8 @@ MODULE mesh_mod
     real, dimension(:,:,:    ), allocatable :: dG22dx   ! \partial \G22     / \partial x
     real, dimension(:,:,:    ), allocatable :: dG22dy   ! \partial \G22     / \partial y
     
+    real, dimension(:,:,:    ), allocatable :: f       ! Coriolis parameter
+    
     real, dimension(:,:,:    ), allocatable :: sinx    ! trigonometric function
     real, dimension(:,:,:    ), allocatable :: cosx    ! trigonometric function
     real, dimension(:,:,:    ), allocatable :: tanx    ! trigonometric function
@@ -42,11 +44,15 @@ MODULE mesh_mod
     real, dimension(:,:,:    ), allocatable :: coty    ! trigonometric function
     real, dimension(:,:,:    ), allocatable :: secy    ! trigonometric function
     real, dimension(:,:,:    ), allocatable :: cscy    ! trigonometric function
+    
+    real, dimension(:,:,:    ), allocatable :: dphisdx ! d \phi _s / dx
+    real, dimension(:,:,:    ), allocatable :: dphisdy ! d \phi _s / dy
   end type mesh_info
   
   ! PV index on Cell
-  real   , dimension(:,:,:,:), allocatable :: pvXIndexOnCell ! PV index on Cell in x direction
-  real   , dimension(:,:,:,:), allocatable :: pvYIndexOnCell ! PV index on Cell in y direction
+  integer, dimension(:,:    ), allocatable :: pvIdx          ! PV index on Cell
+  integer, dimension(:,:,:,:), allocatable :: pvXIndexOnCell ! PV index on Cell in x direction
+  integer, dimension(:,:,:,:), allocatable :: pvYIndexOnCell ! PV index on Cell in y direction
   
   type(mesh_info) :: mesh
   
@@ -85,6 +91,8 @@ MODULE mesh_mod
     allocate( mesh%dG22dx   (      ips:ipe, jps:jpe, ifs:ife) )
     allocate( mesh%dG22dy   (      ips:ipe, jps:jpe, ifs:ife) )
     
+    allocate( mesh%f        (      ips:ipe, jps:jpe, ifs:ife) )
+    
     allocate( mesh%sinx     (      ips:ipe, jps:jpe, ifs:ife) )
     allocate( mesh%cosx     (      ips:ipe, jps:jpe, ifs:ife) )
     allocate( mesh%tanx     (      ips:ipe, jps:jpe, ifs:ife) )
@@ -98,10 +106,20 @@ MODULE mesh_mod
     allocate( mesh%secy     (      ips:ipe, jps:jpe, ifs:ife) )
     allocate( mesh%cscy     (      ips:ipe, jps:jpe, ifs:ife) )
     
+    allocate( mesh%dphisdx  (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%dphisdy  (      ips:ipe, jps:jpe, ifs:ife) )
+    
+    allocate( pvIdx         (DOF, ics:ice                  ) )
     allocate( pvXIndexOnCell(DOF, ics:ice, jcs:jce, ifs:ife) )
     allocate( pvYIndexOnCell(DOF, ics:ice, jcs:jce, ifs:ife) )
     
     ! Calculate the pv index on cell
+    do iCell = ics, ice
+      do iDOF = 1, DOF
+        pvIdx(iDOF,iCell) = (iCell - 1)*DOF + (iDOF - iCell + 1)
+      enddo
+    enddo
+    
     do iPatch = ifs, ife
       do jCell = jcs, jce
         do iCell = ics, ice
@@ -166,6 +184,8 @@ MODULE mesh_mod
           mesh%dG11dy  (iPV, jPV, iPatch) = 2. * cosx**2 * secy**2 * tany / radius**2
           mesh%dG12dy  (iPV, jPV, iPatch) = sinx * (cosx * secy**2 + (2. * cosx**2 - 1.) * sinx * tanx) / radius**2
           mesh%dG22dy  (iPV, jPV, iPatch) = 2. * siny * cosy * tanx**2 / radius**2
+          
+          mesh%f(iPV, jPV, iPatch) = 2. * Omega * sin(mesh%latP(iPV,jPV,iPatch))
         end do
       end do
     end do

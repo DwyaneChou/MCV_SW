@@ -5,13 +5,9 @@ MODULE tend_mod
   
   ! MCV basic definiton
   type tend_field
-    real, dimension(:,:,:), allocatable :: uP
-    real, dimension(:,:,:), allocatable :: vP
-    real, dimension(:,:,:), allocatable :: phiP
-    
-    real, dimension(:,:,:), allocatable :: uC
-    real, dimension(:,:,:), allocatable :: vC
-    real, dimension(:,:,:), allocatable :: phiC
+    real, dimension(:,:,:), allocatable :: u
+    real, dimension(:,:,:), allocatable :: v
+    real, dimension(:,:,:), allocatable :: phi
   end type tend_field
   
   type(tend_field), dimension(:), allocatable :: tend ! allocated by n time points, which is used by temporal integration schemes
@@ -24,13 +20,9 @@ MODULE tend_mod
     allocate( tend(-nIntegralSubSteps:1) )
     
     do iT = -nIntegralSubSteps, 1
-      allocate(tend(iT)%uP  (ips:ipe,jps:jpe,Nf))
-      allocate(tend(iT)%vP  (ips:ipe,jps:jpe,Nf))
-      allocate(tend(iT)%phiP(ips:ipe,jps:jpe,Nf))
-      
-      allocate(tend(iT)%uC  (ics:ice,jcs:jce,Nf))
-      allocate(tend(iT)%vC  (ics:ice,jcs:jce,Nf))
-      allocate(tend(iT)%phiC(ics:ice,jcs:jce,Nf))
+      allocate(tend(iT)%u  (ids:ide,jds:jde,Nf))
+      allocate(tend(iT)%v  (ids:ide,jds:jde,Nf))
+      allocate(tend(iT)%phi(ids:ide,jds:jde,Nf))
     enddo
     
   end subroutine initTend

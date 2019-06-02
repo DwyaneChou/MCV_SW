@@ -12,9 +12,9 @@ module test_case_mod
     if(case_num == 2) call case2
     
     print*,''
-    print*,'max/min value of u   : ',maxval(stat(0)%uP  ),minval(stat(0)%uP  )
-    print*,'max/min value of v   : ',maxval(stat(0)%vP  ),minval(stat(0)%vP  )
-    print*,'max/min value of phi : ',maxval(stat(0)%phiP),minval(stat(0)%phiP)
+    print*,'max/min value of u   : ',maxval(stat(0)%u  ),minval(stat(0)%u  )
+    print*,'max/min value of v   : ',maxval(stat(0)%v  ),minval(stat(0)%v  )
+    print*,'max/min value of phi : ',maxval(stat(0)%phi),minval(stat(0)%phi)
   end subroutine initTestCase
 
   
@@ -41,14 +41,15 @@ module test_case_mod
           call contravProjSphere2Plane(contraU, contraV, u      , 0.     , mesh%matrixIA(:,:,iPV,jPV,iPatch))
           call contrav2cov            (coU    , coV    , contraU, contraV, mesh%matrixG (:,:,iPV,jPV,iPatch))
           
-          stat(0)%phiP(iPV,jPV,iPatch) = gh
-          stat(0)%uP  (iPV,jPV,iPatch) = coU
-          stat(0)%vP  (iPV,jPV,iPatch) = coV
+          stat(0)%phi(iPV,jPV,iPatch) = gh
+          stat(0)%u  (iPV,jPV,iPatch) = coU
+          stat(0)%v  (iPV,jPV,iPatch) = coV
         enddo
       enddo
     enddo
     
-    !hs = 0.
+    mesh%dphisdx = 0.
+    mesh%dphisdy = 0.
   end subroutine case2
   
   ! Rossby-Haurwitz wave with wavenumber 4

@@ -28,11 +28,16 @@ module parameters_mod
   integer :: ide      ! The ending index in the x-direction  (Physical domain)
   integer :: jds      ! The starting index in the y-direction  (Physical domain)
   integer :: jde      ! The ending index in the y-direction  (Physical domain)
-                      
+  
   integer :: ics      ! The starting index in the x-direction (Physical cell/element domain)
   integer :: ice      ! The ending index in the x-direction  (Physical cell/element domain)
   integer :: jcs      ! The starting index in the y-direction  (Physical cell/element domain)
   integer :: jce      ! The ending index in the y-direction  (Physical cell/element domain)
+  
+  integer :: ils      ! The starting index of grid line in the x-direction (Physical cell/element domain)
+  integer :: ile      ! The ending index of grid line in the x-direction (Physical cell/element domain)
+  integer :: jls      ! The starting index of grid line in the y-direction (Physical cell/element domain)
+  integer :: jle      ! The ending index of grid line in the y-direction (Physical cell/element domain)
                       
   integer :: ips      ! The starting index in the x-direction (PV domain)
   integer :: ipe      ! The ending index in the x-direction  (PV domain)
@@ -58,6 +63,7 @@ module parameters_mod
   integer :: Ntheta   ! grid points in the theta direction
   
   integer :: nIntegralSubSteps ! number of integral substeps in temporal integration scheme
+  integer :: nsteps            ! total integral steps
   
   integer, parameter :: Nf = 6           ! Number of cube faces
   
@@ -150,6 +156,11 @@ module parameters_mod
     jde  = nPVy
   
     ! Calculate starting and ending index for element cell
+    ils  = 1
+    ile  = Nx + 1
+    jls  = 1
+    jle  = Ny + 1
+    
     ics  = 1  - xhalo
     ice  = Nx + xhalo
     jcs  = 1  - yhalo
@@ -185,6 +196,8 @@ module parameters_mod
     else
       stop 'Unknown integral scheme, please select from RK4 ...'
     endif
+    
+    nsteps = run_days * 86400 + run_hours * 3600 + run_minutes * 60 + run_seconds
     
   end subroutine initParameters
   

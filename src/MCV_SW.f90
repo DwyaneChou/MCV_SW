@@ -5,13 +5,19 @@
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     program MCV_SW
-      use parameters_mod, only: initParameters
-      use stat_mod      , only: initStat
-      use tend_mod      , only: initTend
-      use mesh_mod      , only: initMesh
-      use test_case_mod , only: initTestCase
-      use output_mod    , only: write_netCDF
+      use parameters_mod
+      use stat_mod
+      use tend_mod
+      use mesh_mod
+      use test_case_mod
+      use time_scheme_mod
+      use output_mod
+      use spatial_operators_mod
       implicit none
+      
+      integer it
+      integer :: old = 0
+      integer :: new = 1
       
       integer :: timeStart,timeEnd
       
@@ -24,7 +30,19 @@
       call initTend
       call initTestCase
       
-      call write_netCDF
+      call history_init
+      
+      ! time integration
+      do it = 1,nsteps
+        call RK4(stat(new),stat(old))
+        
+        if(mod(it*dt,float(history_interval))==0.and.(it*dt>=history_interval))then
+          print*,it*dt,nsteps*dt
+          call history_write_stat(stat(new))
+        endif
+        
+        call switch_stat(stat(old), stat(new))
+      enddo
       
       ! Timing end
       call SYSTEM_CLOCK(timeEnd)
