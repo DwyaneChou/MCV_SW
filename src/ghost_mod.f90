@@ -368,12 +368,11 @@ MODULE ghost_mod
   !
   ! Same as CubedSphereFillHalo_Linear but it also fills the halo i<1 and i>ncube-1
   !
-  !   np - Panel number
-  !   ncube - Dimension of the cubed sphere (# of grid lines)
-  !
   !---------------------------------------------------------------------------------
   SUBROUTINE CubedSphereFillHalo_Linear_extended(parg, parg_halo, np, ncube, nhalo)
-  
+
+!    USE CubedSphereTrans  ! Cubed sphere transforms
+
     IMPLICIT NONE
 
     INTEGER, INTENT(IN) :: nhalo
@@ -386,8 +385,8 @@ MODULE ghost_mod
     REAL, DIMENSION(-nhalo:ncube+nhalo, -nhalo:ncube+nhalo):: zarg
 
     ! Local variables
-    INTEGER :: ii, iref, jj, imin, imax
-    REAL    :: width,beta, a, newbeta
+    INTEGER  :: ii, iref, jj, imin, imax
+    REAL :: width,beta, a, newbeta
 
     REAL, DIMENSION(-nhalo:ncube+nhalo, nhalo+1) :: prealpha !changed compared to non-extended
     REAL, DIMENSION(-nhalo:ncube+nhalo, nhalo+1) :: newalpha !changed compared to non-extended
@@ -523,6 +522,9 @@ MODULE ghost_mod
   !   ncube - Dimension of the cubed sphere (# of grid lines)
   !------------------------------------------------------------------------------
   SUBROUTINE CubedSphereFillHalo_Cubic(parg, zarg, np, ncube)
+
+!    USE CubedSphereTrans  ! Cubed sphere transforms
+!    USE MathUtils         ! Has function for 1D cubic interpolation
 
     IMPLICIT NONE
 
@@ -739,9 +741,10 @@ MODULE ghost_mod
 
     ! Use panel information to calculate (alpha, beta) coords
     alpha_out = ATAN(sx / sz)
-    beta_out  = ATAN(sy / sz)
+    beta_out = ATAN(sy / sz)
 
   END SUBROUTINE
+
 
   !------------------------------------------------------------------------------
   ! FUNCTION CUBIC_EQUISPACE_INTERP

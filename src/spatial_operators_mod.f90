@@ -59,9 +59,9 @@ MODULE spatial_operators_mod
       ! calculate tend in x direction
       do iPatch = ifs, ife
         do j = jds, jde
-          Ex    = E            (:,j,iPatch)
+          Ex    = E       (:,j,iPatch)
           ux    = stat%u  (:,j,iPatch)
-          phiux = phiu         (:,j,iPatch)
+          phiux = phiu    (:,j,iPatch)
           phix  = stat%phi(:,j,iPatch)
           
           do i = ils, ile

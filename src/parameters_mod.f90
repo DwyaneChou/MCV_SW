@@ -200,7 +200,7 @@ module parameters_mod
       stop 'Unknown integral scheme, please select from RK4 ...'
     endif
     
-    nsteps = run_days * 86400 + run_hours * 3600 + run_minutes * 60 + run_seconds
+    nsteps = (run_days * 86400 + run_hours * 3600 + run_minutes * 60 + run_seconds) / dt
     
   end subroutine initParameters
   

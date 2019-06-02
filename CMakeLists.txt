@@ -57,11 +57,12 @@ set(source_files
   src/test_case_mod.f90
   src/spatial_operators_mod.f90
   src/time_scheme_mod.f90
+  src/time_mod.f90
   src/output_mod.f90
 )
 
 add_library(MCV_SW ${source_files})
-target_link_libraries(MCV_SW netcdf netcdff fiona)
+target_link_libraries(MCV_SW netcdf netcdff fiona fortran_datetime)
 
 add_executable(MCV_SW.exe src/MCV_SW.f90)
 target_link_libraries(MCV_SW.exe MCV_SW)

@@ -16,8 +16,11 @@
       implicit none
       
       integer it
+      
       integer :: old = 0
       integer :: new = 1
+      
+      integer :: output_idx, total_output_num
       
       integer :: timeStart,timeEnd
       
@@ -30,15 +33,19 @@
       call initTend
       call initTestCase
       
-      call history_init
+      call history_init(stat(old))
+      call history_write_stat(stat(old),1)
       
       ! time integration
+      output_idx       = 1
+      total_output_num = nsteps * dt / history_interval
       do it = 1,nsteps
         call RK4(stat(new),stat(old))
         
         if(mod(it*dt,float(history_interval))==0.and.(it*dt>=history_interval))then
-          print*,it,'/',nsteps
-          call history_write_stat(stat(new),it*dt)
+          output_idx = output_idx + 1
+          call history_write_stat(stat(new),output_idx)
+          print*,'output index/total : ',output_idx,'/',total_output_num
         endif
         
         call switch_stat(stat(old), stat(new))

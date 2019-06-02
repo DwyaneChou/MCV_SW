@@ -1,138 +1,155 @@
 module output_mod
+  use netcdf
+  use constants_mod
   use parameters_mod
   use mesh_mod
   use stat_mod
   use projection_mod
-  use io_mod
   implicit none
-  
-    character(512) history_period
+    
+    character(13) :: ncFile = 'mcv_output.nc'
     
     contains
-    subroutine history_init
-      character(13) ncFile
+    subroutine history_init(stat)
+      type(stat_field), intent(in) :: stat
+      
+      integer status
+      integer ncid
+      integer lonC_dim_id,latC_dim_id
+      integer lonP_dim_id,latP_dim_id
+      integer patch_dim_id
+      integer time_dim_id
+      integer lonC_id,latC_id
+      integer lonP_id,latP_id
+      integer xC_id,yC_id
+      integer xP_id,yP_id
+      integer time_id
+      integer u_id,v_id
+      integer zonal_wind_id,merdional_wind_id
+      integer phi_id
+      
+      status = nf90_create(ncFile, NF90_CLOBBER + NF90_64BIT_OFFSET , ncid)
+      if(status/=nf90_noerr) call handle_err(status)
+      
+      status = nf90_def_dim(ncid,'lonC' ,Nx            ,lonC_dim_id )
+      status = nf90_def_dim(ncid,'latC' ,Ny            ,latC_dim_id )
+      status = nf90_def_dim(ncid,'lonP' ,nPVx          ,lonP_dim_id )
+      status = nf90_def_dim(ncid,'latP' ,nPVy          ,latP_dim_id )
+      status = nf90_def_dim(ncid,'patch',Nf            ,patch_dim_id)
+      status = nf90_def_dim(ncid,'time' ,NF90_UNLIMITED,time_dim_id )
+      if(status/=nf90_noerr) call handle_err(status)
+      
+      status = nf90_def_var(ncid,'lonC'          ,NF90_DOUBLE,(/lonC_dim_id,latC_dim_id,patch_dim_id            /),lonC_id          )
+      status = nf90_def_var(ncid,'latC'          ,NF90_DOUBLE,(/lonC_dim_id,latC_dim_id,patch_dim_id            /),latC_id          )
+      status = nf90_def_var(ncid,'lonP'          ,NF90_DOUBLE,(/lonP_dim_id,latP_dim_id,patch_dim_id            /),lonP_id          )
+      status = nf90_def_var(ncid,'latP'          ,NF90_DOUBLE,(/lonP_dim_id,latP_dim_id,patch_dim_id            /),latP_id          )
+      status = nf90_def_var(ncid,'uP'            ,NF90_DOUBLE,(/lonP_dim_id,latP_dim_id,patch_dim_id,time_dim_id/),u_id             )
+      status = nf90_def_var(ncid,'vP'            ,NF90_DOUBLE,(/lonP_dim_id,latP_dim_id,patch_dim_id,time_dim_id/),v_id             )
+      status = nf90_def_var(ncid,'zonal_wind'    ,NF90_DOUBLE,(/lonP_dim_id,latP_dim_id,patch_dim_id,time_dim_id/),zonal_wind_id    )
+      status = nf90_def_var(ncid,'merdional_wind',NF90_DOUBLE,(/lonP_dim_id,latP_dim_id,patch_dim_id,time_dim_id/),merdional_wind_id)
+      status = nf90_def_var(ncid,'phiP'          ,NF90_DOUBLE,(/lonP_dim_id,latP_dim_id,patch_dim_id,time_dim_id/),phi_id           )
+      status = nf90_def_var(ncid,'time'          ,NF90_INT   ,(/                                     time_dim_id/),time_id          )
+      if(status/=nf90_noerr) call handle_err(status)
+      
+      !print*,'nf90_put_att'
+      status = nf90_put_att(ncid,lonC_id          ,'units'    ,'degree_east' )
+      status = nf90_put_att(ncid,latC_id          ,'units'    ,'degree_north')
+      status = nf90_put_att(ncid,lonP_id          ,'units'    ,'degree_east' )
+      status = nf90_put_att(ncid,latP_id          ,'units'    ,'degree_north')
+      status = nf90_put_att(ncid,time_id          ,'units'    ,'seconds'     )
+      status = nf90_put_att(ncid,zonal_wind_id    ,'units'    ,'m/s'         )
+      status = nf90_put_att(ncid,merdional_wind_id,'units'    ,'m/s'         )
+      status = nf90_put_att(ncid,lonC_id          ,'long_name','longitude on sphere coordinate for Cells' )
+      status = nf90_put_att(ncid,latC_id          ,'long_name','latitude on sphere coordinate for Cells'  )
+      status = nf90_put_att(ncid,lonP_id          ,'long_name','longitude on sphere coordinate for Points')
+      status = nf90_put_att(ncid,latP_id          ,'long_name','latitude on sphere coordinate for Points' )
+      status = nf90_put_att(ncid,time_id          ,'long_name','time'                                     )
+      status = nf90_put_att(ncid,zonal_wind_id    ,'long_name','zonal wind'                               )
+      status = nf90_put_att(ncid,merdional_wind_id,'long_name','merdional_wind'                           )
+      !if(status/=nf90_noerr) call handle_err(status)
+      
+      status = nf90_enddef(ncid)
+      if(status/=nf90_noerr) call handle_err(status)
+      
+      status = nf90_put_var(ncid,lonC_id, mesh%lonC(1:Nx  ,1:Ny  ,:) * R2D)
+      status = nf90_put_var(ncid,latC_id, mesh%latC(1:Nx  ,1:Ny  ,:) * R2D)
+      status = nf90_put_var(ncid,lonP_id, mesh%lonP(1:nPVx,1:nPVy,:) * R2D)
+      status = nf90_put_var(ncid,latP_id, mesh%latP(1:nPVx,1:nPVy,:) * R2D)
+      if(status/=nf90_noerr) call handle_err(status)
+      
+      status = nf90_close(ncid)
+      if(status/=nf90_noerr) call handle_err(status)
+      
+    end subroutine history_init
     
-      real, dimension(ips:ipe,jps:jpe,ifs:ife) :: u ! zonal wind
-      real, dimension(ips:ipe,jps:jpe,ifs:ife) :: v ! merdional wind
+    subroutine history_write_stat(stat,time_slot_num)
+      type(stat_field), intent(in) :: stat
+      integer         , intent(in) :: time_slot_num
+      
+      integer status
+      integer ncid
+      integer time_id
+      integer u_id,v_id
+      integer zonal_wind_id,merdional_wind_id
+      integer phi_id
+      
+      integer :: time(1)
+      
+      real, dimension(ids:ide,jds:jde,ifs:ife) :: u ! zonal wind
+      real, dimension(ids:ide,jds:jde,ifs:ife) :: v ! merdional wind
       
       real contraU
       real contraV
       
       integer i,j,iPatch
       
+      time(1) = time_slot_num
+      
       do iPatch = ifs, ife
-        do j = jps, jpe
-          do i = ips, ipe
-            call cov2contrav            (contraU      , contraV      , stat(0)%u(i,j,iPatch), stat(0)%v(i,j,iPatch), mesh%matrixIG(:,:,i,j,iPatch))
-            call contravProjPlane2Sphere(u(i,j,iPatch), v(i,j,iPatch), contraU              , contraV              , mesh%matrixA (:,:,i,j,iPatch))
+        do j = jds, jde
+          do i = ids, ide
+            call cov2contrav            (contraU      , contraV      , stat%u(i,j,iPatch), stat%v(i,j,iPatch), mesh%matrixIG(:,:,i,j,iPatch))
+            call contravProjPlane2Sphere(u(i,j,iPatch), v(i,j,iPatch), contraU           , contraV           , mesh%matrixA (:,:,i,j,iPatch))
           enddo
         enddo
       enddo
-    
-      ncFile = 'mcv_output.nc'
       
-      write(history_period,'(i10,1x,a)') history_interval,'seconds'
-      history_period = trim(adjustl(history_period))
+      !print*,'nf90_open'
+      status = nf90_open(ncFile,NF90_WRITE,ncid)
+      if(status/=nf90_noerr) call handle_err(status)
       
-      call io_init
+      !print*,'nf90_inq_varid'
+      status = nf90_inq_varid(ncid,'time'          , time_id          )
+      status = nf90_inq_varid(ncid,'uP'            , u_id             )
+      status = nf90_inq_varid(ncid,'vP'            , v_id             )
+      status = nf90_inq_varid(ncid,'zonal_wind'    , zonal_wind_id    )
+      status = nf90_inq_varid(ncid,'merdional_wind', merdional_wind_id)
+      status = nf90_inq_varid(ncid,'phiP'          , phi_id           )
+      if(status/=nf90_noerr) call handle_err(status)
       
-      ! output data into uniform netCDF file
-      !call io_create_dataset( name='mcv_output', file_path=ncFile, mode='output', frames_per_file=frames_per_file, period=history_period )
-      call io_create_dataset( name='mcv_output', mode='output', frames_per_file=frames_per_file, period=history_period )
+      !print*,'nf90_put_var'
+      status = nf90_put_var(ncid,time_id          ,time                             ,start=(/      time_slot_num/),count=(/             1/))
+      status = nf90_put_var(ncid,u_id             ,stat%u  (ids:ide,jds:jde,ifs:ife),start=(/1,1,1,time_slot_num/),count=(/nPVx,nPVy,Nf,1/))
+      status = nf90_put_var(ncid,v_id             ,stat%v  (ids:ide,jds:jde,ifs:ife),start=(/1,1,1,time_slot_num/),count=(/nPVx,nPVy,Nf,1/))
+      status = nf90_put_var(ncid,zonal_wind_id    ,u       (ids:ide,jds:jde,ifs:ife),start=(/1,1,1,time_slot_num/),count=(/nPVx,nPVy,Nf,1/))
+      status = nf90_put_var(ncid,merdional_wind_id,v       (ids:ide,jds:jde,ifs:ife),start=(/1,1,1,time_slot_num/),count=(/nPVx,nPVy,Nf,1/))
+      status = nf90_put_var(ncid,phi_id           ,stat%phi(ids:ide,jds:jde,ifs:ife),start=(/1,1,1,time_slot_num/),count=(/nPVx,nPVy,Nf,1/))
+      if(status/=nf90_noerr) call handle_err(status)
       
-      call io_add_dim(name='lonC'    , dataset_name='mcv_output', size=Nx_halo  )
-      call io_add_dim(name='latC'    , dataset_name='mcv_output', size=Ny_halo  )
-      call io_add_dim(name='lonP'    , dataset_name='mcv_output', size=nPVx_halo)
-      call io_add_dim(name='latP'    , dataset_name='mcv_output', size=nPVy_halo)
-      call io_add_dim(name='nPatch'  , dataset_name='mcv_output', size=Nf       )
-      
-      ! attributes
-      call io_add_att(name='DOF'  , value=DOF         , dataset_name='mcv_output')
-      call io_add_att(name='x_min', value=x_min * R2D , dataset_name='mcv_output')
-      call io_add_att(name='x_max', value=x_max * R2D , dataset_name='mcv_output')
-      call io_add_att(name='y_min', value=y_min * R2D , dataset_name='mcv_output')
-      call io_add_att(name='y_max', value=y_max * R2D , dataset_name='mcv_output')
-      call io_add_att(name='dx'   , value=dx    * R2D , dataset_name='mcv_output')
-      call io_add_att(name='dy'   , value=dy    * R2D , dataset_name='mcv_output')
-      call io_add_att(name='Nx'   , value=Nx          , dataset_name='mcv_output')
-      call io_add_att(name='Ny'   , value=Ny          , dataset_name='mcv_output')
-      call io_add_att(name='Nf'   , value=Nf          , dataset_name='mcv_output')
-      call io_add_att(name='nPVx' , value=nPVx        , dataset_name='mcv_output')
-      call io_add_att(name='nPVy' , value=nPVy        , dataset_name='mcv_output')
-      call io_add_att(name='xhalo', value=xhalo       , dataset_name='mcv_output')
-      call io_add_att(name='yhalo', value=yhalo       , dataset_name='mcv_output')
-      call io_add_att(name='ids'  , value=ids         , dataset_name='mcv_output')
-      call io_add_att(name='ide'  , value=ide         , dataset_name='mcv_output')
-      call io_add_att(name='jds'  , value=jds         , dataset_name='mcv_output')
-      call io_add_att(name='jde'  , value=jde         , dataset_name='mcv_output')
-      call io_add_att(name='ics'  , value=ics         , dataset_name='mcv_output')
-      call io_add_att(name='ice'  , value=ice         , dataset_name='mcv_output')
-      call io_add_att(name='jcs'  , value=jcs         , dataset_name='mcv_output')
-      call io_add_att(name='jce'  , value=jce         , dataset_name='mcv_output')
-      call io_add_att(name='ips'  , value=ips         , dataset_name='mcv_output')
-      call io_add_att(name='ipe'  , value=ipe         , dataset_name='mcv_output')
-      call io_add_att(name='jps'  , value=jps         , dataset_name='mcv_output')
-      call io_add_att(name='jpe'  , value=jpe         , dataset_name='mcv_output')
-      call io_add_att(name='ifs'  , value=ifs         , dataset_name='mcv_output')
-      call io_add_att(name='ife'  , value=ife         , dataset_name='mcv_output')
-      
-      ! variables
-      call io_add_var(name='xC'  , dataset_name='mcv_output', long_name='central angle on x direction of cell center', units='radian'      , dim_names=['lonC  ', 'latC  ', 'nPatch'], data_type='real(8)')
-      call io_add_var(name='yC'  , dataset_name='mcv_output', long_name='central angle on y direction of cell center', units='radian'      , dim_names=['lonC  ', 'latC  ', 'nPatch'], data_type='real(8)')
-      call io_add_var(name='lonC', dataset_name='mcv_output', long_name='longitude on sphere coordinate for Cells'   , units='degree_east' , dim_names=['lonC  ', 'latC  ', 'nPatch'], data_type='real(8)')
-      call io_add_var(name='latC', dataset_name='mcv_output', long_name='latitude on sphere coordinate for Cells'    , units='degree_north', dim_names=['lonC  ', 'latC  ', 'nPatch'], data_type='real(8)')
-      call io_add_var(name='xP'  , dataset_name='mcv_output', long_name='central angle on x direction of Points'     , units='radian'      , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
-      call io_add_var(name='yP'  , dataset_name='mcv_output', long_name='central angle on y direction of Points'     , units='radian'      , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
-      call io_add_var(name='lonP', dataset_name='mcv_output', long_name='longitude on sphere coordinate for Points'  , units='degree_east' , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
-      call io_add_var(name='latP', dataset_name='mcv_output', long_name='latitude on sphere coordinate for Points'   , units='degree_north', dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
-      
-      call io_add_var(name='u'  , dataset_name='mcv_output', long_name='covariant u wind on cube points'             , units='m/s'         , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
-      call io_add_var(name='v'  , dataset_name='mcv_output', long_name='covariant v wind on cube points'             , units='m/s'         , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
-      call io_add_var(name='phi', dataset_name='mcv_output', long_name='geopotential height on cube points'          , units='gpm'         , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
-                                                                                                                                           
-      call io_add_var(name='uC'  , dataset_name='mcv_output', long_name='covariant u wind on cube cells'             , units='m/s'         , dim_names=['lonC  ', 'latC  ', 'nPatch'], data_type='real(8)')
-      call io_add_var(name='vC'  , dataset_name='mcv_output', long_name='covariant v wind on cube cells'             , units='m/s'         , dim_names=['lonC  ', 'latC  ', 'nPatch'], data_type='real(8)')
-      call io_add_var(name='phiC', dataset_name='mcv_output', long_name='geopotential height on cube cells'          , units='gpm'         , dim_names=['lonC  ', 'latC  ', 'nPatch'], data_type='real(8)')
-                                                                                                                                           
-      call io_add_var(name='zonal_wind'     , dataset_name='mcv_output', long_name='zonal wind'                      , units='m/s'         , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
-      call io_add_var(name='merdional_wind' , dataset_name='mcv_output', long_name='merdional wind'                  , units='m/s'         , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
-      
-      call io_start_output('mcv_output',0.)
-      
-      call io_output(name='xC'          , array=mesh%xC         ,dataset_name='mcv_output')
-      call io_output(name='yC'          , array=mesh%yC         ,dataset_name='mcv_output')
-      call io_output(name='xP'          , array=mesh%xP         ,dataset_name='mcv_output')
-      call io_output(name='yP'          , array=mesh%yP         ,dataset_name='mcv_output')
-      call io_output(name='lonC'        , array=mesh%lonC * R2D ,dataset_name='mcv_output')
-      call io_output(name='latC'        , array=mesh%latC * R2D ,dataset_name='mcv_output')
-      call io_output(name='lonP'        , array=mesh%lonP * R2D ,dataset_name='mcv_output')
-      call io_output(name='latP'        , array=mesh%latP * R2D ,dataset_name='mcv_output')
-      
-      call io_output(name='u'             , array=stat(0)%u   ,dataset_name='mcv_output')
-      call io_output(name='v'             , array=stat(0)%v   ,dataset_name='mcv_output')
-      call io_output(name='phi'           , array=stat(0)%phi ,dataset_name='mcv_output')
-      !call io_output(name='uC'          , array=stat(0)%uC   ,dataset_name='mcv_output')
-      !call io_output(name='vC'          , array=stat(0)%vC   ,dataset_name='mcv_output')
-      !call io_output(name='phiC'        , array=stat(0)%phiC ,dataset_name='mcv_output')
-      call io_output(name='zonal_wind'    , array=u            ,dataset_name='mcv_output')
-      call io_output(name='merdional_wind', array=v            ,dataset_name='mcv_output')
-      
-      call io_end_output('mcv_output')
-    end subroutine history_init
-    
-    subroutine history_write_stat(stat,time_elapsed_seconds)
-      type(stat_field), intent(in) :: stat
-      real            , intent(in) :: time_elapsed_seconds
-      
-      call io_start_output('mcv_output',time_elapsed_seconds)
-      
-      call io_output('mcv_output', 'u'  , stat%u  )
-      call io_output('mcv_output', 'v'  , stat%v  )
-      call io_output('mcv_output', 'phi', stat%phi)
-      
-      call io_end_output(dataset_name='mcv_output')
+      !print*,'nf90_close'
+      status = nf90_close(ncid)
+      if(status/=nf90_noerr) call handle_err(status)
       
     end subroutine history_write_stat
     
+    subroutine handle_err(status)
+      implicit none
+      integer,intent(in)::status
+            
+      if(status/=nf90_noerr)then
+          print*, trim(nf90_strerror(status))
+          stop "Stopped by netCDF"
+      endif  
+    endsubroutine handle_err
 end module output_mod
     
