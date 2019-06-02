@@ -788,15 +788,15 @@ MODULE ghost_mod
     
     do iPatch = ifs, ife
       ! Left boundary
+      if(iPatch==1) gpatch = 4
+      if(iPatch==2) gpatch = 1
+      if(iPatch==3) gpatch = 2
+      if(iPatch==4) gpatch = 3
+      if(iPatch==5) gpatch = 4
+      if(iPatch==6) gpatch = 4
+      
       do j = jds, jde
         do i = ips, ids-1
-          if(iPatch==1) gpatch = 4
-          if(iPatch==2) gpatch = 1
-          if(iPatch==3) gpatch = 2
-          if(iPatch==4) gpatch = 3
-          if(iPatch==5) gpatch = 4
-          if(iPatch==6) gpatch = 4
-          
           matrixG  = mesh%matrixG (:,:,i,j,:)
           matrixIG = mesh%matrixIG(:,:,i,j,:)
           matrixA  = mesh%matrixA (:,:,i,j,:)
@@ -807,15 +807,15 @@ MODULE ghost_mod
       enddo
       
       ! Right boundary
+      if(iPatch==1) gpatch = 2
+      if(iPatch==2) gpatch = 3
+      if(iPatch==3) gpatch = 4
+      if(iPatch==4) gpatch = 1
+      if(iPatch==5) gpatch = 2
+      if(iPatch==6) gpatch = 2
+      
       do j = jds, jde
         do i = ide+1, ipe
-          if(iPatch==1) gpatch = 2
-          if(iPatch==2) gpatch = 3
-          if(iPatch==3) gpatch = 4
-          if(iPatch==4) gpatch = 1
-          if(iPatch==5) gpatch = 2
-          if(iPatch==6) gpatch = 2
-          
           matrixG  = mesh%matrixG (:,:,i,j,:)
           matrixIG = mesh%matrixIG(:,:,i,j,:)
           matrixA  = mesh%matrixA (:,:,i,j,:)
@@ -826,15 +826,15 @@ MODULE ghost_mod
       enddo
       
       ! Top boundary
+      if(iPatch==1) gpatch = 5
+      if(iPatch==2) gpatch = 5
+      if(iPatch==3) gpatch = 5
+      if(iPatch==4) gpatch = 5
+      if(iPatch==5) gpatch = 3
+      if(iPatch==6) gpatch = 1
+      
       do j = jde+1, jpe
         do i = ids, ide
-          if(iPatch==1) gpatch = 5
-          if(iPatch==2) gpatch = 5
-          if(iPatch==3) gpatch = 5
-          if(iPatch==4) gpatch = 5
-          if(iPatch==5) gpatch = 3
-          if(iPatch==6) gpatch = 1
-          
           matrixG  = mesh%matrixG (:,:,i,j,:)
           matrixIG = mesh%matrixIG(:,:,i,j,:)
           matrixA  = mesh%matrixA (:,:,i,j,:)
@@ -845,15 +845,15 @@ MODULE ghost_mod
       enddo
       
       ! Bottom boundary
+      if(iPatch==1) gpatch = 6
+      if(iPatch==2) gpatch = 6
+      if(iPatch==3) gpatch = 6
+      if(iPatch==4) gpatch = 6
+      if(iPatch==5) gpatch = 1
+      if(iPatch==6) gpatch = 3
+      
       do j = jps, jds-1
         do i = ids, ide
-          if(iPatch==1) gpatch = 6
-          if(iPatch==2) gpatch = 6
-          if(iPatch==3) gpatch = 6
-          if(iPatch==4) gpatch = 6
-          if(iPatch==5) gpatch = 1
-          if(iPatch==6) gpatch = 3
-          
           matrixG  = mesh%matrixG (:,:,i,j,:)
           matrixIG = mesh%matrixIG(:,:,i,j,:)
           matrixA  = mesh%matrixA (:,:,i,j,:)
