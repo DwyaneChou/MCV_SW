@@ -100,19 +100,19 @@ MODULE spatial_operators_mod
                                   + stat%phi  (ids:ide,jds:jde,:) * contraV(ids:ide,jds:jde,:) * mesh%dsqrtGdy(ids:ide,jds:jde,:) ) &
                                   / mesh%sqrtG(ids:ide,jds:jde,:)
       
-      print*,'min/max value of u         : ', minval(stat%u   ), maxval(stat%u   )
-      print*,'min/max value of v         : ', minval(stat%v   ), maxval(stat%v   )
-      print*,'min/max value of phi       : ', minval(stat%phi ), maxval(stat%phi )
-      print*,'min/max value of contraU   : ', minval(contraU  ), maxval(contraU  )
-      print*,'min/max value of contraV   : ', minval(contraV  ), maxval(contraV  )
-      print*,'min/max value of flux_x    : ', minval(flux_x   ), maxval(flux_x   )
-      print*,'min/max value of flux_y    : ', minval(flux_y   ), maxval(flux_y   )
-      print*,'min/max value of div_x     : ', minval(div_x    ), maxval(div_x    )
-      print*,'min/max value of div_y     : ', minval(div_y    ), maxval(div_y    )
-      print*,'min/max value of dudt      : ', minval(tend%u   ), maxval(tend%u   )
-      print*,'min/max value of dvdt      : ', minval(tend%v   ), maxval(tend%v   )
-      print*,'min/max value of dphidt    : ', minval(tend%phi ), maxval(tend%phi )
-      print*,'min/max value of vorticity : ', minval(vorticity), maxval(vorticity)
+      !print*,'min/max value of u         : ', minval(stat%u   ), maxval(stat%u   )
+      !print*,'min/max value of v         : ', minval(stat%v   ), maxval(stat%v   )
+      !print*,'min/max value of phi       : ', minval(stat%phi ), maxval(stat%phi )
+      !print*,'min/max value of contraU   : ', minval(contraU  ), maxval(contraU  )
+      !print*,'min/max value of contraV   : ', minval(contraV  ), maxval(contraV  )
+      !print*,'min/max value of flux_x    : ', minval(flux_x   ), maxval(flux_x   )
+      !print*,'min/max value of flux_y    : ', minval(flux_y   ), maxval(flux_y   )
+      !print*,'min/max value of div_x     : ', minval(div_x    ), maxval(div_x    )
+      !print*,'min/max value of div_y     : ', minval(div_y    ), maxval(div_y    )
+      !print*,'min/max value of dudt      : ', minval(tend%u   ), maxval(tend%u   )
+      !print*,'min/max value of dvdt      : ', minval(tend%v   ), maxval(tend%v   )
+      !print*,'min/max value of dphidt    : ', minval(tend%phi ), maxval(tend%phi )
+      !print*,'min/max value of vorticity : ', minval(vorticity), maxval(vorticity)
       
     end subroutine spatial_operator
     

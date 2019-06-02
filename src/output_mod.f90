@@ -6,6 +6,8 @@ module output_mod
   use io_mod
   implicit none
   
+    character(512) history_period
+    
     contains
     subroutine history_init
       character(13) ncFile
@@ -29,10 +31,14 @@ module output_mod
     
       ncFile = 'mcv_output.nc'
       
+      write(history_period,'(i10,1x,a)') history_interval,'seconds'
+      history_period = trim(adjustl(history_period))
+      
       call io_init
       
       ! output data into uniform netCDF file
-      call io_create_dataset( name='mcv_output', file_path=ncFile, mode='output' )
+      !call io_create_dataset( name='mcv_output', file_path=ncFile, mode='output', frames_per_file=frames_per_file, period=history_period )
+      call io_create_dataset( name='mcv_output', mode='output', frames_per_file=frames_per_file, period=history_period )
       
       call io_add_dim(name='lonC'    , dataset_name='mcv_output', size=Nx_halo  )
       call io_add_dim(name='latC'    , dataset_name='mcv_output', size=Ny_halo  )
@@ -80,18 +86,18 @@ module output_mod
       call io_add_var(name='lonP', dataset_name='mcv_output', long_name='longitude on sphere coordinate for Points'  , units='degree_east' , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
       call io_add_var(name='latP', dataset_name='mcv_output', long_name='latitude on sphere coordinate for Points'   , units='degree_north', dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
       
-      call io_add_var(name='u'  , dataset_name='mcv_output', long_name='covariant u wind on cube points'            , units='m/s'         , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
-      call io_add_var(name='v'  , dataset_name='mcv_output', long_name='covariant v wind on cube points'            , units='m/s'         , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
-      call io_add_var(name='phi', dataset_name='mcv_output', long_name='geopotential height on cube points'         , units='gpm'         , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
+      call io_add_var(name='u'  , dataset_name='mcv_output', long_name='covariant u wind on cube points'             , units='m/s'         , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
+      call io_add_var(name='v'  , dataset_name='mcv_output', long_name='covariant v wind on cube points'             , units='m/s'         , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
+      call io_add_var(name='phi', dataset_name='mcv_output', long_name='geopotential height on cube points'          , units='gpm'         , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
                                                                                                                                            
       call io_add_var(name='uC'  , dataset_name='mcv_output', long_name='covariant u wind on cube cells'             , units='m/s'         , dim_names=['lonC  ', 'latC  ', 'nPatch'], data_type='real(8)')
       call io_add_var(name='vC'  , dataset_name='mcv_output', long_name='covariant v wind on cube cells'             , units='m/s'         , dim_names=['lonC  ', 'latC  ', 'nPatch'], data_type='real(8)')
       call io_add_var(name='phiC', dataset_name='mcv_output', long_name='geopotential height on cube cells'          , units='gpm'         , dim_names=['lonC  ', 'latC  ', 'nPatch'], data_type='real(8)')
                                                                                                                                            
-      call io_add_var(name='zonal_wind'     , dataset_name='mcv_output', long_name='zonal wind'                                 , units='m/s'         , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
-      call io_add_var(name='merdional_wind' , dataset_name='mcv_output', long_name='merdional wind'                             , units='m/s'         , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
+      call io_add_var(name='zonal_wind'     , dataset_name='mcv_output', long_name='zonal wind'                      , units='m/s'         , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
+      call io_add_var(name='merdional_wind' , dataset_name='mcv_output', long_name='merdional wind'                  , units='m/s'         , dim_names=['lonP  ', 'latP  ', 'nPatch'], data_type='real(8)')
       
-      call io_start_output(dataset_name='mcv_output')
+      call io_start_output('mcv_output',0.)
       
       call io_output(name='xC'          , array=mesh%xC         ,dataset_name='mcv_output')
       call io_output(name='yC'          , array=mesh%yC         ,dataset_name='mcv_output')
@@ -114,16 +120,17 @@ module output_mod
       call io_end_output('mcv_output')
     end subroutine history_init
     
-    subroutine history_write_stat(stat)
+    subroutine history_write_stat(stat,time_elapsed_seconds)
       type(stat_field), intent(in) :: stat
+      real            , intent(in) :: time_elapsed_seconds
       
-      call io_start_output('mcv_output')
+      call io_start_output('mcv_output',time_elapsed_seconds)
       
       call io_output('mcv_output', 'u'  , stat%u  )
       call io_output('mcv_output', 'v'  , stat%v  )
       call io_output('mcv_output', 'phi', stat%phi)
       
-      call io_end_output('mcv_output')
+      call io_end_output(dataset_name='mcv_output')
       
     end subroutine history_write_stat
     

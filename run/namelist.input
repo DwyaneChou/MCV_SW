@@ -4,7 +4,8 @@ run_hours        = 0
 run_minutes      = 0
 run_seconds      = 0
 dt               = 60
-history_interval = 360,
+history_interval = 360
+frames_per_file  = '1000 months',
 integral_scheme  = 'RK4'
 /
 

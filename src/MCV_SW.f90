@@ -37,8 +37,8 @@
         call RK4(stat(new),stat(old))
         
         if(mod(it*dt,float(history_interval))==0.and.(it*dt>=history_interval))then
-          print*,it*dt,nsteps*dt
-          call history_write_stat(stat(new))
+          print*,it,'/',nsteps
+          call history_write_stat(stat(new),it*dt)
         endif
         
         call switch_stat(stat(old), stat(new))

@@ -4,12 +4,13 @@ module parameters_mod
   
   ! Namelist parameters
   ! time_settings
-  integer :: run_days
-  integer :: run_hours
-  integer :: run_minutes
-  integer :: run_seconds
-  real    :: dt               ! time step
-  integer :: history_interval ! output interval in seconds
+  integer       :: run_days
+  integer       :: run_hours
+  integer       :: run_minutes
+  integer       :: run_seconds
+  real          :: dt               ! time step
+  integer       :: history_interval ! output interval in seconds
+  character(512):: frames_per_file
   
   character*200 :: integral_scheme
   
@@ -82,6 +83,7 @@ module parameters_mod
                            run_minutes      ,&
                            run_seconds      ,&
                            history_interval ,&
+                           frames_per_file  ,&
                            integral_scheme
   
   namelist /case_select/   case_num
@@ -116,7 +118,8 @@ module parameters_mod
     run_hours        = 0
     run_minutes      = 0
     run_seconds      = 0
-    history_interval = 3600
+    history_interval = 360
+    frames_per_file  = '1000 months'
     integral_scheme  = 'RK4'
     
     ! Read namelist
