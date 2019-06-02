@@ -3,7 +3,7 @@
     use tend_mod
     use parameters_mod
     use spatial_operators_mod
-    use ghost_mod, only : CubedSphereFillHalo_Linear_extended
+    use ghost_mod
     implicit none
     
     contains
@@ -33,6 +33,7 @@
         call CubedSphereFillHalo_Linear_extended(stat(two)%v  (ids:ide,jds:jde,:), stat(two)%v  (:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
         call CubedSphereFillHalo_Linear_extended(stat(two)%phi(ids:ide,jds:jde,:), stat(two)%phi(:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
       enddo
+      call convert_ghost_wind(stat(two)%u,stat(two)%v)
       
       call spatial_operator(stat(two), tend(two))
       call update_stat(stat(three), stat(one), tend(two), 0.5 * dt)
@@ -41,6 +42,7 @@
         call CubedSphereFillHalo_Linear_extended(stat(three)%v  (ids:ide,jds:jde,:), stat(three)%v  (:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
         call CubedSphereFillHalo_Linear_extended(stat(three)%phi(ids:ide,jds:jde,:), stat(three)%phi(:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
       enddo
+      call convert_ghost_wind(stat(three)%u,stat(three)%v)
       
       call spatial_operator(stat(three), tend(three))
       call update_stat(stat(four), stat(one), tend(three), dt)
@@ -49,6 +51,7 @@
         call CubedSphereFillHalo_Linear_extended(stat(four)%v  (ids:ide,jds:jde,:), stat(four)%v  (:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
         call CubedSphereFillHalo_Linear_extended(stat(four)%phi(ids:ide,jds:jde,:), stat(four)%phi(:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
       enddo
+      call convert_ghost_wind(stat(four)%u,stat(four)%v)
       
       call spatial_operator(stat(four), tend(four))
       
@@ -78,6 +81,7 @@
         call CubedSphereFillHalo_Linear_extended(stat_new%v  (ids:ide,jds:jde,:), stat_new%v  (:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
         call CubedSphereFillHalo_Linear_extended(stat_new%phi(ids:ide,jds:jde,:), stat_new%phi(:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
       enddo
+      call convert_ghost_wind(stat_new%u,stat_new%v)
       
     end subroutine update_stat
     

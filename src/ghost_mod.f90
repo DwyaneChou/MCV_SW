@@ -774,6 +774,124 @@ MODULE ghost_mod
     
   END FUNCTION CUBIC_EQUISPACE_INTERP
   
+  subroutine convert_ghost_wind(u,v)
+    real, intent(out) :: u(ips:ipe,jps:jpe,ifs:ife)
+    real, intent(out) :: v(ips:ipe,jps:jpe,ifs:ife)
+    
+    real :: matrixG (2,2,ifs:ife)
+    real :: matrixIG(2,2,ifs:ife)
+    real :: matrixA (2,2,ifs:ife)
+    real :: matrixIA(2,2,ifs:ife)
+    
+    integer i,j,iPatch
+    integer gPatch ! ghost patch
+    
+    do iPatch = ifs, ife
+      ! Left boundary
+      do j = jds, jde
+        do i = ips, ids-1
+          if(iPatch==1) gpatch = 4
+          if(iPatch==2) gpatch = 1
+          if(iPatch==3) gpatch = 2
+          if(iPatch==4) gpatch = 3
+          if(iPatch==5) gpatch = 4
+          if(iPatch==6) gpatch = 4
+          
+          matrixG  = mesh%matrixG (:,:,i,j,:)
+          matrixIG = mesh%matrixIG(:,:,i,j,:)
+          matrixA  = mesh%matrixA (:,:,i,j,:)
+          matrixIA = mesh%matrixIA(:,:,i,j,:)
+          
+          call wind_convert_P2P(u(i,j,iPatch),v(i,j,iPatch),gPatch,u(i,j,iPatch),v(i,j,iPatch),iPatch,matrixG,matrixIG,matrixA,matrixIA)
+        enddo
+      enddo
+      
+      ! Right boundary
+      do j = jds, jde
+        do i = ide+1, ipe
+          if(iPatch==1) gpatch = 2
+          if(iPatch==2) gpatch = 3
+          if(iPatch==3) gpatch = 4
+          if(iPatch==4) gpatch = 1
+          if(iPatch==5) gpatch = 2
+          if(iPatch==6) gpatch = 2
+          
+          matrixG  = mesh%matrixG (:,:,i,j,:)
+          matrixIG = mesh%matrixIG(:,:,i,j,:)
+          matrixA  = mesh%matrixA (:,:,i,j,:)
+          matrixIA = mesh%matrixIA(:,:,i,j,:)
+          
+          call wind_convert_P2P(u(i,j,iPatch),v(i,j,iPatch),gPatch,u(i,j,iPatch),v(i,j,iPatch),iPatch,matrixG,matrixIG,matrixA,matrixIA)
+        enddo
+      enddo
+      
+      ! Top boundary
+      do j = jde+1, jpe
+        do i = ids, ide
+          if(iPatch==1) gpatch = 5
+          if(iPatch==2) gpatch = 5
+          if(iPatch==3) gpatch = 5
+          if(iPatch==4) gpatch = 5
+          if(iPatch==5) gpatch = 3
+          if(iPatch==6) gpatch = 1
+          
+          matrixG  = mesh%matrixG (:,:,i,j,:)
+          matrixIG = mesh%matrixIG(:,:,i,j,:)
+          matrixA  = mesh%matrixA (:,:,i,j,:)
+          matrixIA = mesh%matrixIA(:,:,i,j,:)
+          
+          call wind_convert_P2P(u(i,j,iPatch),v(i,j,iPatch),gPatch,u(i,j,iPatch),v(i,j,iPatch),iPatch,matrixG,matrixIG,matrixA,matrixIA)
+        enddo
+      enddo
+      
+      ! Bottom boundary
+      do j = jps, jds-1
+        do i = ids, ide
+          if(iPatch==1) gpatch = 6
+          if(iPatch==2) gpatch = 6
+          if(iPatch==3) gpatch = 6
+          if(iPatch==4) gpatch = 6
+          if(iPatch==5) gpatch = 1
+          if(iPatch==6) gpatch = 3
+          
+          matrixG  = mesh%matrixG (:,:,i,j,:)
+          matrixIG = mesh%matrixIG(:,:,i,j,:)
+          matrixA  = mesh%matrixA (:,:,i,j,:)
+          matrixIA = mesh%matrixIA(:,:,i,j,:)
+          
+          call wind_convert_P2P(u(i,j,iPatch),v(i,j,iPatch),gPatch,u(i,j,iPatch),v(i,j,iPatch),iPatch,matrixG,matrixIG,matrixA,matrixIA)
+        enddo
+      enddo
+      
+    enddo
+  
+  end subroutine convert_ghost_wind
+
+  ! convert vector from patch1 to patch2
+  subroutine wind_convert_P2P(u1,v1,patch1,u2,v2,patch2,matrixG,matrixIG,matrixA,matrixIA)
+    real   , intent(in ) :: u1
+    real   , intent(in ) :: v1
+    integer, intent(in ) :: patch1
+    real   , intent(out) :: u2
+    real   , intent(out) :: v2
+    integer, intent(in ) :: patch2
+    real   , intent(in ) :: matrixG (2,2,ifs:ife)
+    real   , intent(in ) :: matrixIG(2,2,ifs:ife)
+    real   , intent(in ) :: matrixA (2,2,ifs:ife)
+    real   , intent(in ) :: matrixIA(2,2,ifs:ife)
+    
+    real contraU1
+    real contraV1
+    real contraU2
+    real contraV2
+    real u
+    real v
+    
+    call cov2contrav            (contraU1 , contraV1, u1       , v1      , matrixIG(:,:,Patch1))
+    call contravProjPlane2Sphere(u        , v       , contraU1 , contraV1, matrixA (:,:,Patch1))
+    call contravProjSphere2Plane(contraU2 , contraV2, u        , v       , matrixIA(:,:,Patch2))
+    call contrav2cov            (u2       , v2      , contraU2 , contraV2, matrixG (:,:,Patch2))
+  end subroutine wind_convert_P2P
   
 END MODULE ghost_mod
 
