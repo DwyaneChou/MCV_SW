@@ -276,5 +276,120 @@ MODULE spatial_operators_mod
     
     end subroutine CD4
   
+    subroutine unify_bdy_stat(stat)
+      type(stat_field), intent(inout) :: stat
+      
+      real    u(ips:ipe,jps:jpe,ifs:ife)
+      real    v(ips:ipe,jps:jpe,ifs:ife)
+      integer i,j,iPatch
+      
+      ! unify phi
+      call unify_bdy_field(stat%phi(ids:ide,jds:jde,:))
+      
+      ! unify wind
+      ! convert wind from panel to sphere
+      do iPatch = ifs, ife
+        do j = jds, jde
+          call covProjPlane2Sphere(u(ids,j,iPatch), v(ids,j,iPatch), stat%u(ids,j,iPatch), stat%v(ids,j,iPatch), mesh%matrixA(:,:,ids,j,iPatch), mesh%matrixIG(:,:,ids,j,iPatch)) ! Left boundary
+          call covProjPlane2Sphere(u(ide,j,iPatch), v(ide,j,iPatch), stat%u(ide,j,iPatch), stat%v(ide,j,iPatch), mesh%matrixA(:,:,ide,j,iPatch), mesh%matrixIG(:,:,ide,j,iPatch)) ! Right boundary
+        enddo
+        
+        do i = ids, ide
+          call covProjPlane2Sphere(u(i,jde,iPatch), v(i,jde,iPatch), stat%u(i,jde,iPatch), stat%v(i,jde,iPatch), mesh%matrixA(:,:,i,jde,iPatch), mesh%matrixIG(:,:,i,jde,iPatch)) ! Top boundary
+          call covProjPlane2Sphere(u(i,jds,iPatch), v(i,jds,iPatch), stat%u(i,jds,iPatch), stat%v(i,jds,iPatch), mesh%matrixA(:,:,i,jds,iPatch), mesh%matrixIG(:,:,i,jds,iPatch)) ! Bottom boundary
+        enddo
+      enddo
+      
+      ! unify wind on sphere
+      call unify_bdy_field(u(ids:ide,jds:jde,:))
+      call unify_bdy_field(v(ids:ide,jds:jde,:))
+      
+      ! convert wind from sphere to panel
+      do iPatch = ifs, ife
+        do j = jds, jde
+          call covProjSphere2Plane(stat%u(ids,j,iPatch), stat%v(ids,j,iPatch), u(ids,j,iPatch), v(ids,j,iPatch), mesh%matrixIA(:,:,ids,j,iPatch), mesh%matrixG(:,:,ids,j,iPatch)) ! Left boundary
+          call covProjSphere2Plane(stat%u(ide,j,iPatch), stat%v(ide,j,iPatch), u(ide,j,iPatch), v(ide,j,iPatch), mesh%matrixIA(:,:,ids,j,iPatch), mesh%matrixG(:,:,ids,j,iPatch)) ! Right boundary
+        enddo
+        
+        do i = ids, ide
+          call covProjSphere2Plane(stat%u(i,jde,iPatch), stat%v(i,jde,iPatch), u(i,jde,iPatch), v(i,jde,iPatch), mesh%matrixIA(:,:,i,jde,iPatch), mesh%matrixG(:,:,i,jde,iPatch)) ! Top boundary
+          call covProjSphere2Plane(stat%u(i,jds,iPatch), stat%v(i,jds,iPatch), u(i,jds,iPatch), v(i,jds,iPatch), mesh%matrixIA(:,:,i,jds,iPatch), mesh%matrixG(:,:,i,jds,iPatch)) ! Bottom boundary
+        enddo
+      enddo
+      
+    end subroutine unify_bdy_stat
+    
+    subroutine unify_bdy_field(field)
+      real ,intent(inout) :: field(ids:ide,jds:jde,ifs:ife)
+      
+      ! Bdy lines
+      field(ids,jds:jde,1) = 0.5 * (field(ids,jds:jde,4) + field(ide,jds:jde,1)) ! left bdy of patch 1
+      field(ids,jds:jde,2) = 0.5 * (field(ids,jds:jde,1) + field(ide,jds:jde,2)) ! left bdy of patch 2
+      field(ids,jds:jde,3) = 0.5 * (field(ids,jds:jde,2) + field(ide,jds:jde,3)) ! left bdy of patch 3
+      field(ids,jds:jde,4) = 0.5 * (field(ids,jds:jde,3) + field(ide,jds:jde,4)) ! left bdy of patch 4
+      
+      field(ids:ide,jde,1) = 0.5 * (field(ids:ide,jds,5) + field(ids:ide,jde,1)) ! top bdy of patch 1
+      field(ids:ide,jds,1) = 0.5 * (field(ids:ide,jds,1) + field(ids:ide,jde,6)) ! bottom bdy of patch 1
+      
+      field(ids:ide,jde,2) = 0.5 * (field(ide,jds:jde,5) + field(ids:ide,jde   ,2)) ! top bdy of patch 2
+      field(ids:ide,jds,2) = 0.5 * (field(ids:ide,jds,2) + field(ide,jde:jds:-1,6)) ! bottom bdy of patch 2
+      
+      field(ids:ide,jde,3) = 0.5 * (field(ids:ide,jde,3) + field(ide:ids:-1,jde,5)) ! top bdy of patch 3
+      field(ids:ide,jds,3) = 0.5 * (field(ids:ide,jds,3) + field(ide:ids:-1,jds,6)) ! bottom bdy of patch 3
+      
+      field(ids:ide,jde,4) = 0.5 * (field(ids:ide,jde,4) + field(ids,jde:jds:-1,5)) ! top bdy of patch 4
+      field(ids:ide,jds,4) = 0.5 * (field(ids:ide,jds,4) + field(ids,jds:jde   ,6)) ! bottom bdy of patch 4
+      
+      field(ide,jds:jde,1) = field(ids,jds:jde,2) ! right bdy of patch 1
+      field(ide,jds:jde,2) = field(ids,jds:jde,3) ! right bdy of patch 2
+      field(ide,jds:jde,3) = field(ids,jds:jde,4) ! right bdy of patch 3
+      field(ide,jds:jde,4) = field(ids,jds:jde,1) ! right bdy of patch 4
+      
+      field(ids,jds:jde,5) = field(ide:ids:-1,jde,4) ! left bdy of patch 5
+      field(ids,jds:jde,6) = field(ids:ide   ,jds,4) ! left bdy of patch 6
+      
+      field(ide,jds:jde,5) = field(ids:ide,jde   ,2) ! right bdy of 5
+      field(ide,jds:jde,6) = field(ide:ids:-1,jds,2) ! right bdy of 6
+      
+      field(ids:ide,jde,5) = field(ide:ids:-1,jde,3) ! top bdy of patch 5
+      field(ids:ide,jds,5) = field(ids:ide   ,jde,1) ! bottom bdy of patch 5
+      
+      field(ids:ide,jde,6) = field(ids:ide   ,jds,1) ! top bdy of patch 6
+      field(ids:ide,jds,6) = field(ide:ids:-1,jds,3) ! bottom bdy of patch 6
+      
+      ! Bdy points
+      field(ids,jds,1) = (field(ids,jds,1) + field(ide,jds,4) + field(ids,jde,6)) / 3. ! low-left point of patch 1
+      field(ide,jds,1) = (field(ide,jds,1) + field(ids,jds,2) + field(ide,jde,6)) / 3. ! low-right point of patch 1
+      field(ide,jde,1) = (field(ide,jde,1) + field(ids,jde,2) + field(ide,jds,5)) / 3. ! up-right point of patch 1
+      field(ids,jde,1) = (field(ids,jde,1) + field(ide,jde,4) + field(ids,jds,5)) / 3. ! up-left point of patch 1
+      
+      field(ids,jds,3) = (field(ids,jds,3) + field(ide,jds,2) + field(ide,jds,6)) / 3. ! low-left point of patch 3
+      field(ide,jds,3) = (field(ide,jds,3) + field(ids,jds,4) + field(ide,jds,6)) / 3. ! low-right point of patch 3
+      field(ide,jde,3) = (field(ide,jde,3) + field(ids,jde,5) + field(ids,jde,4)) / 3. ! up-right point of patch 3
+      field(ids,jde,3) = (field(ids,jde,3) + field(ide,jde,2) + field(ide,jds,5)) / 3. ! up-left point of patch 3
+      
+      field(ids,jds,2) = field(ide,jds,1) ! low-left point of patch 2
+      field(ide,jds,2) = field(ids,jds,3) ! low-right point of patch 2
+      field(ide,jde,2) = field(ids,jde,3) ! up-right point of patch 2
+      field(ids,jde,2) = field(ide,jde,1) ! up-left point of patch 2
+
+      field(ids,jds,4) = field(ide,jds,3) ! low-left point of patch 4
+      field(ide,jds,4) = field(ids,jds,1) ! low-right point of patch 4
+      field(ide,jde,4) = field(ids,jde,1) ! up-right point of patch 4
+      field(ids,jde,4) = field(ide,jde,3) ! up-left point of patch 4
+      
+      field(ids,jds,5) = field(ids,jde,1) ! low-left point of patch 5
+      field(ide,jds,5) = field(ide,jde,1) ! low-right point of patch 5
+      field(ide,jde,5) = field(ids,jde,3) ! up-right point of patch 5
+      field(ids,jde,5) = field(ide,jde,3) ! up-left point of patch 5
+
+      field(ids,jds,6) = field(ide,jds,3) ! low-left point of patch 6
+      field(ide,jds,6) = field(ids,jds,3) ! low-right point of patch 6
+      field(ide,jde,6) = field(ide,jds,1) ! up-right point of patch 6
+      field(ids,jde,6) = field(ids,jds,1) ! up-left point of patch 6
+      
+    end subroutine unify_bdy_field
+    
+    
 END MODULE spatial_operators_mod
 

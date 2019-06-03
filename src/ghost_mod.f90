@@ -881,17 +881,11 @@ MODULE ghost_mod
     real   , intent(in ) :: matrixA (2,2,ifs:ife)
     real   , intent(in ) :: matrixIA(2,2,ifs:ife)
     
-    real contraU1
-    real contraV1
-    real contraU2
-    real contraV2
     real u
     real v
     
-    call cov2contrav            (contraU1 , contraV1, u1       , v1      , matrixIG(:,:,Patch1))
-    call contravProjPlane2Sphere(u        , v       , contraU1 , contraV1, matrixA (:,:,Patch1))
-    call contravProjSphere2Plane(contraU2 , contraV2, u        , v       , matrixIA(:,:,Patch2))
-    call contrav2cov            (u2       , v2      , contraU2 , contraV2, matrixG (:,:,Patch2))
+    call covProjPlane2Sphere(u , v , u1, v1, matrixA (:,:,Patch1), matrixIG(:,:,Patch1))
+    call covProjSphere2Plane(u2, v2, u , v , matrixIA(:,:,Patch2), matrixG (:,:,Patch2))
   end subroutine wind_convert_P2P
   
 END MODULE ghost_mod
