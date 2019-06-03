@@ -34,6 +34,7 @@
         call CubedSphereFillHalo_Linear_extended(stat(two)%phi(ids:ide,jds:jde,:), stat(two)%phi(:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
       enddo
       call convert_ghost_wind(stat(two)%u,stat(two)%v)
+      call unify_bdy(stat(two))
       
       call spatial_operator(stat(two), tend(two))
       call update_stat(stat(three), stat(one), tend(two), 0.5 * dt)
@@ -43,6 +44,7 @@
         call CubedSphereFillHalo_Linear_extended(stat(three)%phi(ids:ide,jds:jde,:), stat(three)%phi(:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
       enddo
       call convert_ghost_wind(stat(three)%u,stat(three)%v)
+      call unify_bdy(stat(three))
       
       call spatial_operator(stat(three), tend(three))
       call update_stat(stat(four), stat(one), tend(three), dt)
@@ -52,6 +54,7 @@
         call CubedSphereFillHalo_Linear_extended(stat(four)%phi(ids:ide,jds:jde,:), stat(four)%phi(:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
       enddo
       call convert_ghost_wind(stat(four)%u,stat(four)%v)
+      call unify_bdy(stat(four))
       
       call spatial_operator(stat(four), tend(four))
       
@@ -82,6 +85,7 @@
         call CubedSphereFillHalo_Linear_extended(stat_new%phi(ids:ide,jds:jde,:), stat_new%phi(:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
       enddo
       call convert_ghost_wind(stat_new%u,stat_new%v)
+      call unify_bdy(stat_new)
       
     end subroutine update_stat
     
@@ -93,5 +97,51 @@
       stat_old%u   = stat_new%u  
       stat_old%v   = stat_new%v
     end subroutine switch_stat
+    
+    subroutine unify_bdy(stat)
+      type(stat_field), intent(inout) :: stat
+      
+      integer i,iinv
+      
+      ! Bdy lines
+      stat%phi(1,jds:jde,1) = 0.5 * (stat%phi(1,jds:jde,4) + stat%phi(ide,jds:jde,1))
+      stat%phi(1,jds:jde,2) = 0.5 * (stat%phi(1,jds:jde,1) + stat%phi(ide,jds:jde,2))
+      stat%phi(1,jds:jde,3) = 0.5 * (stat%phi(1,jds:jde,2) + stat%phi(ide,jds:jde,3))
+      stat%phi(1,jds:jde,4) = 0.5 * (stat%phi(1,jds:jde,3) + stat%phi(ide,jds:jde,4))
+      
+      stat%phi(ids:ide,jde,1) = 0.5 * (stat%phi(ids:ide,jds,5) + stat%phi(ids:ide,jde,1))
+      stat%phi(ids:ide,jds,1) = 0.5 * (stat%phi(ids:ide,jds,1) + stat%phi(ids:ide,jde,6))
+      
+      stat%phi(ids:ide,jde,2) = 0.5 * (stat%phi(ide,jds:jde,5) + stat%phi(ids:ide,jde,2))
+      stat%phi(ids:ide,jds,2) = 0.5 * (stat%phi(ids:ide,jds,2) + stat%phi(ide,jde:jds:-1,6))
+      
+      stat%phi(ids:ide,jde,3) = 0.5 * (stat%phi(ids:ide,jde,3) + stat%phi(ide:ids:-1,jde,5))
+      stat%phi(ids:ide,jds,3) = 0.5 * (stat%phi(ids:ide,jds,3) + stat%phi(ide:ids:-1,jds,6))
+      
+      stat%phi(ids:ide,jde,4) = 0.5 * (stat%phi(ids:ide,jde,4) + stat%phi(ids,jde:jds:-1,5))
+      stat%phi(ids:ide,jds,4) = 0.5 * (stat%phi(ids:ide,jds,4) + stat%phi(ids,jds:jde,6))
+      
+      ! Bdy points
+      stat%phi(ids,jds,1) = (stat%phi(ids,jds,1) + stat%phi(ide,jds,4) + stat%phi(ids,jde,6)) / 3.
+      stat%phi(ide,jds,1) = (stat%phi(ide,jds,1) + stat%phi(ids,jds,2) + stat%phi(ide,jde,6)) / 3.
+      stat%phi(ide,jde,1) = (stat%phi(ide,jde,1) + stat%phi(ids,jde,2) + stat%phi(ide,jds,5)) / 3.
+      stat%phi(ids,jde,1) = (stat%phi(ids,jde,1) + stat%phi(ide,jde,4) + stat%phi(ids,jds,5)) / 3.
+      
+      stat%phi(ids,jds,3) = (stat%phi(ids,jds,3) + stat%phi(ide,jds,2) + stat%phi(ide,jds,6)) / 3.
+      stat%phi(ide,jds,3) = (stat%phi(ide,jds,3) + stat%phi(ids,jds,4) + stat%phi(ide,jds,6)) / 3.
+      stat%phi(ide,jde,3) = (stat%phi(ide,jde,3) + stat%phi(ids,jde,5) + stat%phi(ids,jde,4)) / 3.
+      stat%phi(ids,jde,3) = (stat%phi(ids,jde,3) + stat%phi(ide,jde,2) + stat%phi(ide,jds,5)) / 3.
+      
+      stat%phi(ids,jds,2) = stat%phi(ide,jds,1)
+      stat%phi(ide,jds,2) = stat%phi(ids,jds,3)
+      stat%phi(ide,jde,2) = stat%phi(ids,jde,3)
+      stat%phi(ids,jde,2) = stat%phi(ide,jde,1)
+
+      stat%phi(ids,jds,4) = stat%phi(ide,jds,3)
+      stat%phi(ide,jds,4) = stat%phi(ids,jds,1)
+      stat%phi(ide,jde,4) = stat%phi(ids,jde,1)
+      stat%phi(ids,jde,4) = stat%phi(ide,jde,3)
+      
+    end subroutine unify_bdy
     
   end module time_scheme_mod

@@ -31,12 +31,12 @@ module output_mod
       status = nf90_create(ncFile, NF90_CLOBBER + NF90_64BIT_OFFSET , ncid)
       if(status/=nf90_noerr) call handle_err(status)
       
-      status = nf90_def_dim(ncid,'lonC' ,Nx            ,lonC_dim_id )
-      status = nf90_def_dim(ncid,'latC' ,Ny            ,latC_dim_id )
-      status = nf90_def_dim(ncid,'lonP' ,nPVx          ,lonP_dim_id )
-      status = nf90_def_dim(ncid,'latP' ,nPVy          ,latP_dim_id )
-      status = nf90_def_dim(ncid,'patch',Nf            ,patch_dim_id)
-      status = nf90_def_dim(ncid,'time' ,NF90_UNLIMITED,time_dim_id )
+      status = nf90_def_dim(ncid,'lonC'  ,Nx            ,lonC_dim_id )
+      status = nf90_def_dim(ncid,'latC'  ,Ny            ,latC_dim_id )
+      status = nf90_def_dim(ncid,'lonP'  ,nPVx          ,lonP_dim_id )
+      status = nf90_def_dim(ncid,'latP'  ,nPVy          ,latP_dim_id )
+      status = nf90_def_dim(ncid,'nPatch',Nf            ,patch_dim_id)
+      status = nf90_def_dim(ncid,'time'  ,NF90_UNLIMITED,time_dim_id )
       if(status/=nf90_noerr) call handle_err(status)
       
       status = nf90_def_var(ncid,'lonC'          ,NF90_DOUBLE,(/lonC_dim_id,latC_dim_id,patch_dim_id            /),lonC_id          )

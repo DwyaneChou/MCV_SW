@@ -401,8 +401,8 @@ MODULE ghost_mod
     ! Calculate the overlapping alpha coordinates
     width = 0.5 * pi / DBLE(ncube-1) ! dx
 
-    newalpha = -999999999999.0
-    prealpha = -999999999999.0
+    newalpha = -9999999999999999.0
+    prealpha = -9999999999999999.0
 
     DO jj = 1, nhalo+1
 !      DO ii = 0, ncube
@@ -757,7 +757,7 @@ MODULE ghost_mod
   !   dx - Spacing of points
   !   x - X coordinate where interpolation is to be applied
   !   y - Array of 4 values = f(x + k * dx) where k = 0,1,2,3
-!------------------------------------------------------------------------------
+  !------------------------------------------------------------------------------
   FUNCTION CUBIC_EQUISPACE_INTERP(dx, x, y)
     
     IMPLICIT NONE
@@ -774,6 +774,7 @@ MODULE ghost_mod
     
   END FUNCTION CUBIC_EQUISPACE_INTERP
   
+  ! Correct wind on ghost cells
   subroutine convert_ghost_wind(u,v)
     real, intent(out) :: u(ips:ipe,jps:jpe,ifs:ife)
     real, intent(out) :: v(ips:ipe,jps:jpe,ifs:ife)

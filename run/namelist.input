@@ -1,6 +1,6 @@
 &time_settings
-run_days         = 33
-run_hours        = 0
+run_days         = 0
+run_hours        = 10
 run_minutes      = 0
 run_seconds      = 0
 dt               = 120
@@ -16,6 +16,6 @@ case_num    = 2,
 &domain
 dx          = 3,  ! Unit: degree 
 dy          = 3,  ! Unit: degree
-xhalo       = 2,  ! The ghost cell size
-yhalo       = 2,  ! The ghost cell size
+xhalo       = 1,  ! The ghost cell size
+yhalo       = 1,  ! The ghost cell size
 /
