@@ -2,6 +2,7 @@ MODULE ghost_mod
   use constants_mod
   use parameters_mod
   use mesh_mod
+  use stat_mod
   
   implicit none
   
@@ -774,6 +775,19 @@ MODULE ghost_mod
     
   END FUNCTION CUBIC_EQUISPACE_INTERP
   
+  ! Fill up halo with ghost points  
+  subroutine fill_halo(stat)
+    type(stat_field), intent(inout) :: stat
+    
+    integer iPatch
+
+    do iPatch = ifs, ife
+      call CubedSphereFillHalo_Linear_extended(stat%u  (ids:ide,jds:jde,:), stat%u  (:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
+      call CubedSphereFillHalo_Linear_extended(stat%v  (ids:ide,jds:jde,:), stat%v  (:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
+      call CubedSphereFillHalo_Linear_extended(stat%phi(ids:ide,jds:jde,:), stat%phi(:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
+    enddo
+  end subroutine fill_halo 
+    
   ! Correct wind on ghost cells
   subroutine convert_ghost_wind(u,v)
     real, intent(out) :: u(ips:ipe,jps:jpe,ifs:ife)
