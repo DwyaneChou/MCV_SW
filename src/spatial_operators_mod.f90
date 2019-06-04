@@ -279,43 +279,9 @@ MODULE spatial_operators_mod
     subroutine unify_bdy_stat(stat)
       type(stat_field), intent(inout) :: stat
       
-      real    u(ips:ipe,jps:jpe,ifs:ife)
-      real    v(ips:ipe,jps:jpe,ifs:ife)
-      integer i,j,iPatch
-      
-      ! unify phi
-      call unify_bdy_field(stat%phi(ids:ide,jds:jde,:))
-      
-      ! unify wind
-      ! convert wind from panel to sphere
-      do iPatch = ifs, ife
-        do j = jds, jde
-          call covProjPlane2Sphere(u(ids,j,iPatch), v(ids,j,iPatch), stat%u(ids,j,iPatch), stat%v(ids,j,iPatch), mesh%matrixA(:,:,ids,j,iPatch), mesh%matrixIG(:,:,ids,j,iPatch)) ! Left boundary
-          call covProjPlane2Sphere(u(ide,j,iPatch), v(ide,j,iPatch), stat%u(ide,j,iPatch), stat%v(ide,j,iPatch), mesh%matrixA(:,:,ide,j,iPatch), mesh%matrixIG(:,:,ide,j,iPatch)) ! Right boundary
-        enddo
-        
-        do i = ids, ide
-          call covProjPlane2Sphere(u(i,jde,iPatch), v(i,jde,iPatch), stat%u(i,jde,iPatch), stat%v(i,jde,iPatch), mesh%matrixA(:,:,i,jde,iPatch), mesh%matrixIG(:,:,i,jde,iPatch)) ! Top boundary
-          call covProjPlane2Sphere(u(i,jds,iPatch), v(i,jds,iPatch), stat%u(i,jds,iPatch), stat%v(i,jds,iPatch), mesh%matrixA(:,:,i,jds,iPatch), mesh%matrixIG(:,:,i,jds,iPatch)) ! Bottom boundary
-        enddo
-      enddo
-      
-      ! unify wind on sphere
-      call unify_bdy_field(u(ids:ide,jds:jde,:))
-      call unify_bdy_field(v(ids:ide,jds:jde,:))
-      
-      ! convert wind from sphere to panel
-      do iPatch = ifs, ife
-        do j = jds, jde
-          call covProjSphere2Plane(stat%u(ids,j,iPatch), stat%v(ids,j,iPatch), u(ids,j,iPatch), v(ids,j,iPatch), mesh%matrixIA(:,:,ids,j,iPatch), mesh%matrixG(:,:,ids,j,iPatch)) ! Left boundary
-          call covProjSphere2Plane(stat%u(ide,j,iPatch), stat%v(ide,j,iPatch), u(ide,j,iPatch), v(ide,j,iPatch), mesh%matrixIA(:,:,ids,j,iPatch), mesh%matrixG(:,:,ids,j,iPatch)) ! Right boundary
-        enddo
-        
-        do i = ids, ide
-          call covProjSphere2Plane(stat%u(i,jde,iPatch), stat%v(i,jde,iPatch), u(i,jde,iPatch), v(i,jde,iPatch), mesh%matrixIA(:,:,i,jde,iPatch), mesh%matrixG(:,:,i,jde,iPatch)) ! Top boundary
-          call covProjSphere2Plane(stat%u(i,jds,iPatch), stat%v(i,jds,iPatch), u(i,jds,iPatch), v(i,jds,iPatch), mesh%matrixIA(:,:,i,jds,iPatch), mesh%matrixG(:,:,i,jds,iPatch)) ! Bottom boundary
-        enddo
-      enddo
+      call unify_bdy_field(stat%phi            (ids:ide,jds:jde,:))
+      call unify_bdy_field(stat%zonal_wind     (ids:ide,jds:jde,:))
+      call unify_bdy_field(stat%meridional_wind(ids:ide,jds:jde,:))
       
     end subroutine unify_bdy_stat
     
@@ -390,6 +356,35 @@ MODULE spatial_operators_mod
       
     end subroutine unify_bdy_field
     
+    ! convert vector from patch to sphere
+    subroutine convert_wind_P2SP(stat)
+      type(stat_field), intent(inout) :: stat
+      
+      integer i,j,iPatch
+      
+      do iPatch = ifs, ife
+        do j = jps, jpe
+          do i = ips, ipe
+            call covProjPlane2Sphere(stat%zonal_wind(i,j,iPatch), stat%meridional_wind(i,j,iPatch), stat%u(i,j,iPatch), stat%v(i,j,iPatch), mesh%matrixA(:,:,i,j,iPatch), mesh%matrixIG(:,:,i,j,iPatch))
+          enddo
+        enddo
+      enddo
     
+    end subroutine convert_wind_P2SP
+    
+    subroutine convert_wind_SP2P(stat)
+      type(stat_field), intent(inout) :: stat
+      
+      integer i,j,iPatch
+      
+      do iPatch = ifs, ife
+        do j = jps, jpe
+          do i = ips, ipe
+            call covProjSphere2Plane(stat%u(i,j,iPatch), stat%v(i,j,iPatch), stat%zonal_wind(i,j,iPatch), stat%meridional_wind(i,j,iPatch), mesh%matrixIA(:,:,i,j,iPatch), mesh%matrixG(:,:,i,j,iPatch))
+          enddo
+        enddo
+      enddo
+    
+    end subroutine convert_wind_SP2P
 END MODULE spatial_operators_mod
 

@@ -4,6 +4,7 @@
     use parameters_mod
     use spatial_operators_mod
     use ghost_mod
+    use output_mod
     implicit none
     
     contains
@@ -26,23 +27,26 @@
       stat(one)%u   = stat_old%u
       stat(one)%v   = stat_old%v
       
-      call spatial_operator(stat(one), tend(one))
-      call update_stat(stat(two), stat(one), tend(one), 0.5 * dt)
-      call fill_halo(stat(two))
-      call convert_ghost_wind(stat(two)%u,stat(two)%v)
-      call unify_bdy_stat(stat(two))
+      call spatial_operator (stat(one), tend(one))
+      call update_stat      (stat(two), stat(one), tend(one), 0.5 * dt)
+      call convert_wind_P2SP(stat(two))
+      call fill_ghost       (stat(two))
+      call unify_bdy_stat   (stat(two))
+      call convert_wind_SP2P(stat(two))
       
-      call spatial_operator(stat(two), tend(two))
-      call update_stat(stat(three), stat(one), tend(two), 0.5 * dt)
-      call fill_halo(stat(three))
-      call convert_ghost_wind(stat(three)%u,stat(three)%v)
-      call unify_bdy_stat(stat(three))
+      call spatial_operator (stat(two), tend(two))
+      call update_stat      (stat(three), stat(one), tend(two), 0.5 * dt)
+      call convert_wind_P2SP(stat(three))
+      call fill_ghost       (stat(three))
+      call unify_bdy_stat   (stat(three))
+      call convert_wind_SP2P(stat(three))
       
-      call spatial_operator(stat(three), tend(three))
-      call update_stat(stat(four), stat(one), tend(three), dt)
-      call fill_halo(stat(four))
-      call convert_ghost_wind(stat(four)%u,stat(four)%v)
-      call unify_bdy_stat(stat(four))
+      call spatial_operator (stat(three), tend(three))
+      call update_stat      (stat(four), stat(one), tend(three), dt)
+      call convert_wind_P2SP(stat(four))
+      call fill_ghost       (stat(four))
+      call unify_bdy_stat   (stat(four))
+      call convert_wind_SP2P(stat(four))
       
       call spatial_operator(stat(four), tend(four))
       
@@ -50,7 +54,11 @@
       tend(new)%u   = (tend(one)%u   + 2.0 * tend(two)%u   + 2.0 * tend(three)%u   + tend(four)%u  ) / 6.
       tend(new)%v   = (tend(one)%v   + 2.0 * tend(two)%v   + 2.0 * tend(three)%v   + tend(four)%v  ) / 6.
       
-      call update_stat(stat_new, stat_old, tend(new), dt)
+      call update_stat      (stat_new, stat_old, tend(new), dt)
+      call convert_wind_P2SP(stat_new)
+      call fill_ghost       (stat_new)
+      call unify_bdy_stat   (stat_new)
+      call convert_wind_SP2P(stat_new)
 
     end subroutine RK4
     
@@ -66,10 +74,6 @@
       stat_new%phi(ids:ide,jds:jde,ifs:ife) = stat_old%phi(ids:ide,jds:jde,ifs:ife) + dt * tend%phi(ids:ide,jds:jde,ifs:ife)
       stat_new%u  (ids:ide,jds:jde,ifs:ife) = stat_old%u  (ids:ide,jds:jde,ifs:ife) + dt * tend%u  (ids:ide,jds:jde,ifs:ife)
       stat_new%v  (ids:ide,jds:jde,ifs:ife) = stat_old%v  (ids:ide,jds:jde,ifs:ife) + dt * tend%v  (ids:ide,jds:jde,ifs:ife)
-      
-      call fill_halo(stat_new)
-      call convert_ghost_wind(stat_new%u,stat_new%v)
-      call unify_bdy_stat(stat_new)
       
     end subroutine update_stat
     

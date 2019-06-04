@@ -13,12 +13,15 @@
       use time_scheme_mod
       use output_mod
       use spatial_operators_mod
+      use diag_mod
       implicit none
       
       integer it
       
       integer :: old = 0
       integer :: new = 1
+      
+      real    :: total_mass
       
       integer :: output_idx, total_output_num
       
@@ -33,19 +36,22 @@
       call initTend
       call initTestCase
       
-      call history_init(stat(old))
-      call history_write_stat(stat(old),1)
-      
       ! time integration
       output_idx       = 1
       total_output_num = nsteps * dt / history_interval + 1
+      call history_init      (stat(old))
+      call history_write_stat(stat(old),1)
+      call calc_total_mass   (total_mass,stat(old))
+      print*,'output index/total and total mass: ',output_idx,'/',total_output_num,' ',total_mass
+      
       do it = 1,nsteps
         call RK4(stat(new),stat(old))
         
         if(mod(it*dt,float(history_interval))==0.and.(it*dt>=history_interval))then
           output_idx = output_idx + 1
           call history_write_stat(stat(new),output_idx)
-          print*,'output index/total : ',output_idx,'/',total_output_num
+          call calc_total_mass(total_mass,stat(new))
+          print*,'output index/total and total mass: ',output_idx,'/',total_output_num,' ',total_mass
         endif
         
         call switch_stat(stat(old), stat(new))

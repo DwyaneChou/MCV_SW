@@ -47,6 +47,10 @@ MODULE mesh_mod
     
     real, dimension(:,:,:    ), allocatable :: dphisdx ! d \phi _s / dx
     real, dimension(:,:,:    ), allocatable :: dphisdy ! d \phi _s / dy
+    
+    real, dimension(:,:      ), allocatable :: areaCell
+    real                                    :: weightsOnPV(DOF,DOF)
+
   end type mesh_info
   
   ! PV index on Cell
@@ -109,6 +113,8 @@ MODULE mesh_mod
     allocate( mesh%dphisdx  (      ips:ipe, jps:jpe, ifs:ife) )
     allocate( mesh%dphisdy  (      ips:ipe, jps:jpe, ifs:ife) )
     
+    allocate( mesh%areaCell (Nx, Ny) )
+    
     allocate( pvIdx         (DOF, ics:ice                  ) )
     allocate( pvXIndexOnCell(DOF, ics:ice, jcs:jce, ifs:ife) )
     allocate( pvYIndexOnCell(DOF, ics:ice, jcs:jce, ifs:ife) )
@@ -138,8 +144,8 @@ MODULE mesh_mod
     do iPatch = ifs, ife
       do jPV = jps, jpe
         do iPV = ips, ipe
-          mesh%xP  (iPV, jPV, iPatch) = (iPV - 1) * dx/(DOF - 1) + x_min
-          mesh%yP  (iPV, jPV, iPatch) = (jPV - 1) * dy/(DOF - 1) + y_min
+          mesh%xP(iPV, jPV, iPatch) = (iPV - 1) * dx/(DOF - 1) + x_min
+          mesh%yP(iPV, jPV, iPatch) = (jPV - 1) * dy/(DOF - 1) + y_min
           
           call pointProjPlane2Sphere(mesh%lonP(iPV, jPV, iPatch), mesh%latP(iPV, jPV, iPatch), &
                                      mesh%xP  (iPV, jPV, iPatch), mesh%yP  (iPV, jPV, iPatch), iPatch)
@@ -216,8 +222,82 @@ MODULE mesh_mod
       end do
     end do
     
+    ! Calculate weights of points in a cell For 4th-order MCV only
+    mesh%weightsOnPV(1,1) = 1.
+    mesh%weightsOnPV(1,2) = 3.
+    mesh%weightsOnPV(1,3) = 3.
+    mesh%weightsOnPV(1,4) = 1.
+    mesh%weightsOnPV(2,:) = 3. * mesh%weightsOnPV(1,:)
+    mesh%weightsOnPV(3,:) = 3. * mesh%weightsOnPV(1,:)
+    mesh%weightsOnPV(4,:) = mesh%weightsOnPV(1,:)
+    mesh%weightsOnPV      = mesh%weightsOnPV / 80.
+    
+    ! Calculate areaCell
+    call EquiangularAllAreas(Nx, mesh%areaCell)
+    mesh%areaCell = mesh%areaCell * radius **2
+    
   end subroutine initMesh
   
-
+  !------------------------------------------------------------------------------
+  ! SUBROUTINE EquiangularAllAreas
+  !
+  ! Description:
+  !   Compute the area of all cubed sphere grid cells, storing the results in
+  !   a two dimensional array.
+  !
+  ! Parameters: 
+  !   icube - Cell number (Nx or Ny) of the cubed sphere
+  !   dA (OUT) - Output array containing the area of all cubed sphere grid cells
+  !------------------------------------------------------------------------------
+  SUBROUTINE EquiangularAllAreas(icube, dA)
+    IMPLICIT NONE
+    
+    INTEGER,                         INTENT(IN)  :: icube
+    REAL   , DIMENSION(icube,icube), INTENT(OUT) :: dA
+    
+    ! Local variables
+    INTEGER                           :: k, k1, k2
+    REAL                              :: a1, a2, a3, a4
+    REAL , DIMENSION(icube+1,icube+1) :: ang
+    REAL , DIMENSION(icube+1)         :: gp
+    
+    !#ifdef DBG 
+    REAL    :: dbg !DBG
+    !#endif
+    
+    ! Recall that we are using equi-angular spherical gridding
+    !   Compute the angle between equiangular cubed sphere projection grid lines.
+    DO k = 1, icube+1
+      gp(k) = -0.25 * pi + (pi/DBLE(2*(icube))) * DBLE(k-1)
+    ENDDO
+    
+    DO k2=1,icube+1
+      DO k1=1,icube+1
+        ang(k1,k2) = ACOS(-SIN(gp(k1)) * SIN(gp(k2)))
+      ENDDO
+    ENDDO
+    
+    DO k2=1,icube
+      DO k1=1,icube
+        a1 =      ang(k1  , k2  )
+        a2 = pi - ang(k1+1, k2  )
+        a3 = pi - ang(k1  , k2+1)
+        a4 =      ang(k1+1, k2+1)      
+        ! area = r*r*(-2*pi+sum(interior angles))
+        DA(k1,k2) = -2.0*pi+a1+a2+a3+a4
+      ENDDO
+    ENDDO
+    
+    ! Only for debugging - test consistency
+    dbg = 0.0
+    DO k2=1,icube
+      DO k1=1,icube
+        dbg = dbg + DA(k1,k2)
+      ENDDO
+    ENDDO
+    
+    print*,''
+    print*,'total area error     : ', dbg - 4. * pi / 6. !DBG
+  END SUBROUTINE EquiangularAllAreas
 END MODULE mesh_mod
 

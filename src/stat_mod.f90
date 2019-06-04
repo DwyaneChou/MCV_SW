@@ -8,6 +8,9 @@ MODULE stat_mod
     real, dimension(:,:,:), allocatable :: u   ! covariant wind on x direction on points
     real, dimension(:,:,:), allocatable :: v   ! covariant wind on y direction on points
     real, dimension(:,:,:), allocatable :: phi ! geopotential height on points
+    
+    real, dimension(:,:,:), allocatable :: zonal_wind
+    real, dimension(:,:,:), allocatable :: meridional_wind
   end type stat_field
   
   type(stat_field), dimension(:), allocatable :: stat ! allocated by n time points, which is used by temporal integration schemes
@@ -23,6 +26,9 @@ MODULE stat_mod
       allocate(stat(iT)%u  (ips:ipe,jps:jpe,ifs:ife))
       allocate(stat(iT)%v  (ips:ipe,jps:jpe,ifs:ife))
       allocate(stat(iT)%phi(ips:ipe,jps:jpe,ifs:ife))
+      
+      allocate(stat(iT)%zonal_wind     (ips:ipe,jps:jpe,ifs:ife))
+      allocate(stat(iT)%meridional_wind(ips:ipe,jps:jpe,ifs:ife))
     enddo
     
   end subroutine initStat

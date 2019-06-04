@@ -31,10 +31,10 @@ module output_mod
       status = nf90_create(ncFile, NF90_CLOBBER + NF90_64BIT_OFFSET , ncid)
       if(status/=nf90_noerr) call handle_err(status)
       
-      status = nf90_def_dim(ncid,'lonC'  ,Nx_halo       ,lonC_dim_id )
-      status = nf90_def_dim(ncid,'latC'  ,Ny_halo       ,latC_dim_id )
-      status = nf90_def_dim(ncid,'lonP'  ,nPVx_halo     ,lonP_dim_id )
-      status = nf90_def_dim(ncid,'latP'  ,nPVy_halo     ,latP_dim_id )
+      status = nf90_def_dim(ncid,'lonC'  ,Nx            ,lonC_dim_id )
+      status = nf90_def_dim(ncid,'latC'  ,Ny            ,latC_dim_id )
+      status = nf90_def_dim(ncid,'lonP'  ,nPVx          ,lonP_dim_id )
+      status = nf90_def_dim(ncid,'latP'  ,nPVy          ,latP_dim_id )
       status = nf90_def_dim(ncid,'nPatch',Nf            ,patch_dim_id)
       status = nf90_def_dim(ncid,'time'  ,NF90_UNLIMITED,time_dim_id )
       if(status/=nf90_noerr) call handle_err(status)
@@ -52,29 +52,29 @@ module output_mod
       if(status/=nf90_noerr) call handle_err(status)
       
       !print*,'nf90_put_att'
-      status = nf90_put_att(ncid,lonC_id           ,'units'    ,'degree_east' )
-      status = nf90_put_att(ncid,latC_id           ,'units'    ,'degree_north')
-      status = nf90_put_att(ncid,lonP_id           ,'units'    ,'degree_east' )
-      status = nf90_put_att(ncid,latP_id           ,'units'    ,'degree_north')
-      status = nf90_put_att(ncid,time_id           ,'units'    ,'seconds'     )
-      status = nf90_put_att(ncid,zonal_wind_id     ,'units'    ,'m/s'         )
-      status = nf90_put_att(ncid,meridional_wind_id,'units'    ,'m/s'         )
-      status = nf90_put_att(ncid,lonC_id           ,'long_name','longitude on sphere coordinate for Cells' )
-      status = nf90_put_att(ncid,latC_id           ,'long_name','latitude on sphere coordinate for Cells'  )
-      status = nf90_put_att(ncid,lonP_id           ,'long_name','longitude on sphere coordinate for Points')
-      status = nf90_put_att(ncid,latP_id           ,'long_name','latitude on sphere coordinate for Points' )
-      status = nf90_put_att(ncid,time_id           ,'long_name','time'                                     )
-      status = nf90_put_att(ncid,zonal_wind_id     ,'long_name','zonal wind'                               )
+      status = nf90_put_att(ncid,lonC_id          ,'units'     ,'degree_east' )
+      status = nf90_put_att(ncid,latC_id          ,'units'     ,'degree_north')
+      status = nf90_put_att(ncid,lonP_id          ,'units'     ,'degree_east' )
+      status = nf90_put_att(ncid,latP_id          ,'units'     ,'degree_north')
+      status = nf90_put_att(ncid,time_id          ,'units'     ,'seconds'     )
+      status = nf90_put_att(ncid,zonal_wind_id    ,'units'     ,'m/s'         )
+      status = nf90_put_att(ncid,meridional_wind_id,'units'     ,'m/s'         )
+      status = nf90_put_att(ncid,lonC_id          ,'long_name' ,'longitude on sphere coordinate for Cells' )
+      status = nf90_put_att(ncid,latC_id          ,'long_name' ,'latitude on sphere coordinate for Cells'  )
+      status = nf90_put_att(ncid,lonP_id          ,'long_name' ,'longitude on sphere coordinate for Points')
+      status = nf90_put_att(ncid,latP_id          ,'long_name' ,'latitude on sphere coordinate for Points' )
+      status = nf90_put_att(ncid,time_id          ,'long_name' ,'time'                                     )
+      status = nf90_put_att(ncid,zonal_wind_id    ,'long_name' ,'zonal wind'                               )
       status = nf90_put_att(ncid,meridional_wind_id,'long_name','meridional_wind'                          )
       !if(status/=nf90_noerr) call handle_err(status)
       
       status = nf90_enddef(ncid)
       if(status/=nf90_noerr) call handle_err(status)
       
-      status = nf90_put_var(ncid,lonC_id, mesh%lonC * R2D)
-      status = nf90_put_var(ncid,latC_id, mesh%latC * R2D)
-      status = nf90_put_var(ncid,lonP_id, mesh%lonP * R2D)
-      status = nf90_put_var(ncid,latP_id, mesh%latP * R2D)
+      status = nf90_put_var(ncid,lonC_id, mesh%lonC(1:Nx  ,1:Ny  ,:) * R2D)
+      status = nf90_put_var(ncid,latC_id, mesh%latC(1:Nx  ,1:Ny  ,:) * R2D)
+      status = nf90_put_var(ncid,lonP_id, mesh%lonP(1:nPVx,1:nPVy,:) * R2D)
+      status = nf90_put_var(ncid,latP_id, mesh%latP(1:nPVx,1:nPVy,:) * R2D)
       if(status/=nf90_noerr) call handle_err(status)
       
       status = nf90_close(ncid)
@@ -95,9 +95,25 @@ module output_mod
       
       integer :: time(1)
       
+      real, dimension(ids:ide,jds:jde,ifs:ife) :: u ! zonal wind
+      real, dimension(ids:ide,jds:jde,ifs:ife) :: v ! merdional wind
+      
+      real contraU
+      real contraV
+      
       integer i,j,iPatch
       
       time(1) = time_slot_num
+      
+      do iPatch = ifs, ife
+        do j = jds, jde
+          do i = ids, ide
+            call cov2contrav            (contraU      , contraV      , stat%u(i,j,iPatch), stat%v(i,j,iPatch), mesh%matrixIG(:,:,i,j,iPatch))
+            call contravProjPlane2Sphere(u(i,j,iPatch), v(i,j,iPatch), contraU           , contraV           , mesh%matrixA (:,:,i,j,iPatch))
+          enddo
+        enddo
+      enddo
+      
       !print*,'nf90_open'
       status = nf90_open(ncFile,NF90_WRITE,ncid)
       if(status/=nf90_noerr) call handle_err(status)
@@ -112,12 +128,12 @@ module output_mod
       if(status/=nf90_noerr) call handle_err(status)
       
       !print*,'nf90_put_var'
-      status = nf90_put_var(ncid,time_id           ,time                ,start=(/      time_slot_num/),count=(/                       1/))
-      status = nf90_put_var(ncid,u_id              ,stat%u              ,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
-      status = nf90_put_var(ncid,v_id              ,stat%v              ,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
-      status = nf90_put_var(ncid,zonal_wind_id     ,stat%zonal_wind     ,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
-      status = nf90_put_var(ncid,meridional_wind_id,stat%meridional_wind,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
-      status = nf90_put_var(ncid,phi_id            ,stat%phi            ,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
+      status = nf90_put_var(ncid,time_id           ,time                             ,start=(/      time_slot_num/),count=(/             1/))
+      status = nf90_put_var(ncid,u_id              ,stat%u  (ids:ide,jds:jde,ifs:ife),start=(/1,1,1,time_slot_num/),count=(/nPVx,nPVy,Nf,1/))
+      status = nf90_put_var(ncid,v_id              ,stat%v  (ids:ide,jds:jde,ifs:ife),start=(/1,1,1,time_slot_num/),count=(/nPVx,nPVy,Nf,1/))
+      status = nf90_put_var(ncid,zonal_wind_id     ,u       (ids:ide,jds:jde,ifs:ife),start=(/1,1,1,time_slot_num/),count=(/nPVx,nPVy,Nf,1/))
+      status = nf90_put_var(ncid,meridional_wind_id,v       (ids:ide,jds:jde,ifs:ife),start=(/1,1,1,time_slot_num/),count=(/nPVx,nPVy,Nf,1/))
+      status = nf90_put_var(ncid,phi_id            ,stat%phi(ids:ide,jds:jde,ifs:ife),start=(/1,1,1,time_slot_num/),count=(/nPVx,nPVy,Nf,1/))
       if(status/=nf90_noerr) call handle_err(status)
       
       !print*,'nf90_close'

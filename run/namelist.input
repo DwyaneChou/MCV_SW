@@ -1,6 +1,6 @@
 &time_settings
-run_days         = 0
-run_hours        = 10
+run_days         = 1
+run_hours        = 0
 run_minutes      = 0
 run_seconds      = 0
 dt               = 120

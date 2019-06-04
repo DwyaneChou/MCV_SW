@@ -58,6 +58,7 @@ set(source_files
   src/spatial_operators_mod.f90
   src/time_scheme_mod.f90
   src/time_mod.f90
+  src/diag_mod.f90
   src/output_mod.f90
 )
 

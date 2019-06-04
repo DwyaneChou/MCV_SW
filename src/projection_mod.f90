@@ -1,5 +1,6 @@
 MODULE projection_mod
   use constants_mod
+  use parameters_mod
   implicit none
 
 contains
