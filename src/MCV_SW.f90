@@ -9,6 +9,7 @@
       use stat_mod
       use tend_mod
       use mesh_mod
+      use ghost_mod
       use test_case_mod
       use time_scheme_mod
       use output_mod
@@ -34,6 +35,7 @@
       call initMesh
       call initStat
       call initTend
+      call initGhost
       call initTestCase
       
       ! time integration

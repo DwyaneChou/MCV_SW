@@ -7,147 +7,91 @@ MODULE ghost_mod
   
   implicit none
   
+  integer nPVHalo
+  
   ! ghost location
   type ghostLocation
-    integer, dimension(:    ), allocatable :: patchIndex ! The patch where the ghost cells locate
-    integer, dimension(:    ), allocatable :: axis       ! The axis where the ghost cells locate, 1 for x axis, 2 for y axis
-    real   , dimension(:,:,:), allocatable :: X          ! The x coordinate of ghost cell
-    real   , dimension(:,:,:), allocatable :: Y          ! The y coordinate of ghost cell
-    integer, dimension(:,:,:), allocatable :: XIndex     ! The ghost cell index on x direction
-    integer, dimension(:,:,:), allocatable :: YIndex     ! The ghost cell index on y direction
+    real   , dimension(:,:), allocatable :: X     ! X coordinate of ghost points
+    real   , dimension(:,:), allocatable :: Y     ! Y coordinate of ghost points, not needed in interpolation
+    real   , dimension(:,:), allocatable :: coefL ! Left coefficient of linear interpolation
+    real   , dimension(:,:), allocatable :: coefR ! Right coefficient of linear interpolation
+    integer, dimension(:,:), allocatable :: iref  ! Index of reference point
   end type ghostLocation
   
-  type(ghostLocation) :: ghostL ! ghost location on left edge
-  type(ghostLocation) :: ghostR ! ghost location on right edge
-  type(ghostLocation) :: ghostT ! ghost location on top edge
-  type(ghostLocation) :: ghostB ! ghost location on bottom edge
-  
+  type(ghostLocation) :: ghost
   contains
   
   subroutine initGhost
-    integer :: iPV, jPV, iPatch, iDOF
+    integer :: i,j
+    integer :: iPatch ! computational patch
+    integer :: gpatch ! ghost patch
+    integer :: ihalo  ! halo index
     real    :: lambda, theta
-
-    allocate( ghostL%patchIndex(              ifs:ife) )
-    allocate( ghostL%axis      (              ifs:ife) )
-    allocate( ghostL%X         (DOF, ips:ipe, ifs:ife) )
-    allocate( ghostL%Y         (DOF, ips:ipe, ifs:ife) )
-    allocate( ghostL%XIndex    (DOF, ips:ipe, ifs:ife) )
-    allocate( ghostL%YIndex    (DOF, ips:ipe, ifs:ife) )
+    real    :: coefL
+    real    :: coefR
+    integer :: iref
     
-    allocate( ghostR%patchIndex(              ifs:ife) )
-    allocate( ghostR%axis      (              ifs:ife) )
-    allocate( ghostR%X         (DOF, ips:ipe, ifs:ife) )
-    allocate( ghostR%Y         (DOF, ips:ipe, ifs:ife) )
-    allocate( ghostR%XIndex    (DOF, ips:ipe, ifs:ife) )
-    allocate( ghostR%YIndex    (DOF, ips:ipe, ifs:ife) )
-
-    allocate( ghostT%patchIndex(              ifs:ife) )
-    allocate( ghostT%axis      (              ifs:ife) )
-    allocate( ghostT%X         (DOF, ips:ipe, ifs:ife) )
-    allocate( ghostT%Y         (DOF, ips:ipe, ifs:ife) )
-    allocate( ghostT%XIndex    (DOF, ips:ipe, ifs:ife) )
-    allocate( ghostT%YIndex    (DOF, ips:ipe, ifs:ife) )
+    real    :: X_RAW(ids:ide)
     
-    allocate( ghostB%patchIndex(              ifs:ife) )
-    allocate( ghostB%axis      (              ifs:ife) )
-    allocate( ghostB%X         (DOF, ips:ipe, ifs:ife) )
-    allocate( ghostB%Y         (DOF, ips:ipe, ifs:ife) )
-    allocate( ghostB%XIndex    (DOF, ips:ipe, ifs:ife) )
-    allocate( ghostB%YIndex    (DOF, ips:ipe, ifs:ife) )
+    nPVHalo = xhalo * (DOF - 1)
     
-    ! Calculate ghost location info
-    ! patch index
-    ghostL%patchIndex(1) = 4
-    ghostL%patchIndex(2) = 1
-    ghostL%patchIndex(3) = 2
-    ghostL%patchIndex(4) = 3
-    ghostL%patchIndex(5) = 4
-    ghostL%patchIndex(6) = 4
+    allocate(ghost%X    (ids:ide,nPVHalo))
+    allocate(ghost%Y    (ids:ide,nPVHalo))
+    allocate(ghost%coefL(ids:ide,nPVHalo))
+    allocate(ghost%coefR(ids:ide,nPVHalo))
+    allocate(ghost%iref (ids:ide,nPVHalo))
     
-    ghostR%patchIndex(1) = 2
-    ghostR%patchIndex(2) = 3
-    ghostR%patchIndex(3) = 4
-    ghostR%patchIndex(4) = 1
-    ghostR%patchIndex(5) = 2
-    ghostR%patchIndex(6) = 2
-    
-    ghostT%patchIndex(1) = 5
-    ghostT%patchIndex(2) = 5
-    ghostT%patchIndex(3) = 5
-    ghostT%patchIndex(4) = 5
-    ghostT%patchIndex(5) = 3
-    ghostT%patchIndex(6) = 1
-    
-    ghostB%patchIndex(1) = 6
-    ghostB%patchIndex(2) = 6
-    ghostB%patchIndex(3) = 6
-    ghostB%patchIndex(4) = 6
-    ghostB%patchIndex(5) = 1
-    ghostB%patchIndex(6) = 3
-    
-    ! axis
-    ghostL%axis      (1) = 2
-    ghostL%axis      (2) = 2
-    ghostL%axis      (3) = 2
-    ghostL%axis      (4) = 2
-    ghostL%axis      (5) = 1
-    ghostL%axis      (6) = 1
-    
-    ghostR%axis      (1) = 2
-    ghostR%axis      (2) = 2
-    ghostR%axis      (3) = 2
-    ghostR%axis      (4) = 2
-    ghostR%axis      (5) = 1
-    ghostR%axis      (6) = 1
-    
-    ghostT%axis      (1) = 1
-    ghostT%axis      (2) = 2
-    ghostT%axis      (3) = 1
-    ghostT%axis      (4) = 2
-    ghostT%axis      (5) = 1
-    ghostT%axis      (6) = 1
-    
-    ghostB%axis      (1) = 1
-    ghostB%axis      (2) = 2
-    ghostB%axis      (3) = 1
-    ghostB%axis      (4) = 2
-    ghostB%axis      (5) = 1
-    ghostB%axis      (6) = 1
-    
-    ! calculate X, Y coordinate on ghost patch, here we assume ips==jps and ipe==jpe
-    do iPatch = ifs, ife
-      do iPV = 1, DOF - 1
-        do jPV = 1, nPVx
-          iDOF = iPV+ips-1
-          call pointProjPlane2Sphere(lambda, theta, mesh%xP(iDOF, jPV, iPatch), mesh%yP(iDOF, jPV, iPatch), iPatch)
-          call pointProjSphere2Plane(ghostL%X(iPV, jPV, iPatch), ghostL%Y(iPV, jPV, iPatch), lambda, theta, ghostL%patchIndex(iPatch))
-          
-          iDOF = iPV+nPVx
-          call pointProjPlane2Sphere(lambda, theta, mesh%xP(iDOF, jPV, iPatch), mesh%yP(iDOF, jPV, iPatch), iPatch)
-          call pointProjSphere2Plane(ghostR%X(iPV, jPV, iPatch), ghostR%Y(iPV, jPV, iPatch), lambda, theta, ghostR%patchIndex(iPatch))
-          
-          iDOF = iPV+nPVx
-          call pointProjPlane2Sphere(lambda, theta, mesh%xP(jPV, iDOF, iPatch), mesh%yP(jPV, iDOF, iPatch), iPatch)
-          call pointProjSphere2Plane(ghostT%X(iPV, jPV, iPatch), ghostT%Y(iPV, jPV, iPatch), lambda, theta, ghostT%patchIndex(iPatch))
-          
-          iDOF = iPV+ips-1
-          call pointProjPlane2Sphere(lambda, theta, mesh%xP(jPV, iDOF, iPatch), mesh%yP(jPV, iDOF, iPatch), iPatch)
-          call pointProjSphere2Plane(ghostB%X(iPV, jPV, iPatch), ghostB%Y(iPV, jPV, iPatch), lambda, theta, ghostB%patchIndex(iPatch))
-        enddo
+    ! Calculate ghost points location
+    iPatch = 1
+    gpatch = 5
+    do j = jde+1, jpe
+      do i = ids, ide
+        ihalo = j - jde
+        call pointProjPlane2Sphere(lambda          , theta           , mesh%xP(i,j,iPatch), mesh%yP(i,j,iPatch), iPatch)
+        call pointProjSphere2Plane(ghost%X(i,ihalo), ghost%Y(i,ihalo), lambda             , theta              , gPatch)
       enddo
     enddo
     
-    !! Ghost Location check, the first value should be variable, and the 2nd one should be stationary
-    !do iPatch = ifs, ife
-    !  do iPV = 1, nPVx
-    !    if(ghostB%axis(iPatch) == 1)then
-    !      print*,iPatch,ghostB%X(3, iPV, iPatch), ghostB%Y(3, iPV, iPatch) 
-    !    else
-    !      print*,iPatch,ghostB%Y(3, iPV, iPatch), ghostB%X(3, iPV, iPatch)
-    !    endif
-    !  enddo
-    !enddo
+    X_RAW = mesh%xP(ids:ide,1,iPatch)
+    do i = ids,ide
+      print*,i,X_RAW(i),ghost%X(i,1),ghost%X(i,2)
+    enddo
+    
+    ! Calculate reference points
+    ! Now apply linear interpolation to obtain edge components
+    DO j = 1, nPVHalo
+      ! Reset the reference index
+      iref = ids
+      
+      DO i = ids, ide
+        !
+        ! Find reference points
+        !
+        DO WHILE ((iref .NE. ide) .AND. (ghost%X(i,j) > X_RAW(iref)))
+          iref = iref + 1
+        ENDDO
+        ghost%iref(i,j) = iref
+    
+        IF ((ghost%X(i,j) >= X_RAW(iref-1)) .AND. (ghost%X(i,j) <= X_RAW(iref  )))THEN
+            
+          coefR = (ghost%X(i,j) - X_RAW(iref-1)) / (X_RAW(iref) - X_RAW(iref-1))
+          coefL = 1. - coefR
+          
+          ghost%coefL(i,j) = coefL
+          ghost%coefR(i,j) = coefR
+          
+          !print*,i,iref,ghost%coefL(i,j),ghost%coefR(i,j)
+          
+          IF ((coefR < 0.0) .OR. (coefR > 1.)) THEN
+            WRITE (*,*) 'FAIL in CubedSphereFillHalo_Linear'
+            WRITE (*,*) 'a out of bounds'
+            STOP
+          ENDIF
+        ENDIF
+      ENDDO
+      stop
+    ENDDO
+    
   end subroutine initGhost
   
   !------------------------------------------------------------------------------
@@ -235,546 +179,9 @@ MODULE ghost_mod
     ENDIF
   END SUBROUTINE CubedSphereFillHalo
 
-  !------------------------------------------------------------------------------
-  ! SUBROUTINE CubedSphereFillHalo_Linear
-  !
-  ! Description:
-  !   Recompute the cubed sphere data storage array, with the addition of a
-  !   2-element halo region around the specified panel.  Use linear order
-  !   interpolation to translate between panels.
-  !
-  ! Parameters:
-  !   parg - Current panel values
-  !   zarg (OUT) - Calculated panel values with halo/ghost region
-  !   np - Panel number
-  !   ncube - Dimension of the cubed sphere (# of grid lines)
-  !------------------------------------------------------------------------------
-  SUBROUTINE CubedSphereFillHalo_Linear(parg, zarg, np, ncube)
-
-    IMPLICIT NONE
-
-    INTEGER, PARAMETER :: nhalo = 2
-
-    INTEGER, INTENT(IN) :: np, ncube
-
-    REAL, DIMENSION(ncube-1              , ncube-1              , 6), INTENT(IN ) :: parg
-    REAL, DIMENSION(1-nhalo:ncube+nhalo-1, 1-nhalo:ncube+nhalo-1, 6), INTENT(OUT) :: zarg
-
-    ! Local variables
-    INTEGER  :: ii, iref, jj, imin, imax
-    REAL :: width, beta, a, newbeta
-
-    REAL, DIMENSION(0:ncube, nhalo) :: prealpha
-    REAL, DIMENSION(0:ncube, nhalo) :: newalpha
-
-    REAL, DIMENSION(1-nhalo:ncube+nhalo-1, 1-nhalo:ncube+nhalo-1, 6) :: yarg
-
-    ! Use 0.0 order interpolation to begin
-    CALL CubedSphereFillHalo(parg, yarg, np, ncube, nhalo)
-
-    zarg(:,:,np) = yarg(:,:,np)
-
-    ! Calculate the overlapping alpha coordinates
-    width = 0.5 * pi / DBLE(ncube-1) ! dx
-
-    DO jj = 1, nhalo
-      DO ii = 0, ncube
-        prealpha(ii, jj) =  width * (DBLE(ii-1) + 0.5) - 0.25 * pi
-        beta             = -width * (DBLE(jj-1) + 0.5) - 0.25 * pi
-
-        CALL CubedSphereABPFromABP(prealpha(ii,jj), beta, 1, 5, &
-                                   newalpha(ii,jj), newbeta)
-      ENDDO
-    ENDDO
-
-    ! Now apply linear interpolation to obtain edge components
-    DO jj = 1, nhalo
-      ! Reset the reference index
-      iref = 2
-
-      ! Interpolation can be applied to more elements after first band
-      IF (jj == 1) THEN
-        imin = 1
-        imax = ncube-1
-      ELSE
-        imin = 0
-        imax = ncube
-      ENDIF
-
-      ! Apply linear interpolation
-      DO ii = imin, imax
-        DO WHILE ((iref .NE. ncube-1) .AND. &
-                  (newalpha(ii,jj) > prealpha(iref,jj)))
-          iref = iref + 1
-        ENDDO
-
-        IF ((newalpha(ii,jj)  >   prealpha(iref-1,jj)) .AND. &
-            (newalpha(ii,jj) .LE. prealpha(iref  ,jj)))THEN
-          a = (newalpha(ii  ,jj) - prealpha(iref-1,jj)) / &
-              (prealpha(iref,jj) - prealpha(iref-1,jj))
-
-          IF ((a < 0.0) .OR. (a > 1.)) THEN
-            WRITE (*,*) 'FAIL in CubedSphereFillHalo_Linear'
-            WRITE (*,*) 'a out of bounds'
-            STOP
-          ENDIF
-
-          ! Bottom edge of panel
-          zarg(ii, 1-jj, np) =                   &
-            (1. - a) * yarg(iref-1, 1-jj, np) + &
-                  a  * yarg(iref  , 1-jj, np)
-
-          ! Left edge of panel
-          zarg(1-jj, ii, np) =                   &
-            (1. - a) * yarg(1-jj, iref-1, np) + &
-                  a  * yarg(1-jj, iref  , np)
-
-          ! Top edge of panel
-          zarg(ii, ncube+jj-1, np) =                   &
-            (1. - a) * yarg(iref-1, ncube+jj-1, np) + &
-                  a  * yarg(iref  , ncube+jj-1, np)
-
-          ! Right edge of panel
-          zarg(ncube+jj-1, ii, np) =                   &
-            (1. - a) * yarg(ncube+jj-1, iref-1, np) + &
-                  a  * yarg(ncube+jj-1, iref  , np)
-
-        ELSE
-          WRITE (*,*) 'FAIL in CubedSphereFillHalo_Linear'
-          WRITE (*,*) 'ii: ', ii, ' jj: ', jj
-          WRITE (*,*) 'newalpha: ', newalpha(ii,jj)
-          WRITE (*,*) 'prealpha: ', prealpha(iref-1,jj), '-', prealpha(iref,jj)
-          STOP
-        ENDIF
-      ENDDO
-    ENDDO
-
-    ! Fill in corner bits
-    zarg(0, 0, np) =                          &
-      0.25 * (zarg( 1,0,np) + zarg(0, 1,np) + &
-              zarg(-1,0,np) + zarg(0,-1,np))
-    zarg(0, ncube, np) =                                 &
-      0.25 * (zarg( 0,ncube-1,np) + zarg(0,ncube+1,np) + &
-              zarg(-1,ncube  ,np) + zarg(1,ncube  ,np))
-    zarg(ncube, 0, np) =                                 &
-      0.25 * (zarg(ncube-1, 0,np) + zarg(ncube+1,0,np) + &
-              zarg(ncube  ,-1,np) + zarg(ncube  ,1,np))
-    zarg(ncube, ncube, np) =                                        &
-      0.25 * (zarg(ncube-1,ncube  ,np) + zarg(ncube+1,ncube  ,np) + &
-              zarg(ncube  ,ncube-1,np) + zarg(ncube  ,ncube+1,np))
-
-  END SUBROUTINE CubedSphereFillHalo_Linear
-
-  !--------------------------------------------------------------------------------
-  ! SUBROUTINE CubedSphereFillHalo_Linear_extended
-  !
-  ! Same as CubedSphereFillHalo_Linear but it also fills the halo i<1 and i>ncube-1
-  !
-  !---------------------------------------------------------------------------------
-  SUBROUTINE CubedSphereFillHalo_Linear_extended(parg, parg_halo, np, ncube, nhalo)
-
-!    USE CubedSphereTrans  ! Cubed sphere transforms
-
-    IMPLICIT NONE
-
-    INTEGER, INTENT(IN) :: nhalo
-    INTEGER, INTENT(IN) :: np, ncube
-
-    REAL, DIMENSION(ncube-1, ncube-1, 6), INTENT(IN) :: parg
-
-    REAL, DIMENSION(1-nhalo:ncube+nhalo-1, 1-nhalo:ncube+nhalo-1), INTENT(OUT) :: parg_halo
-
-    REAL, DIMENSION(-nhalo:ncube+nhalo, -nhalo:ncube+nhalo):: zarg
-
-    ! Local variables
-    INTEGER  :: ii, iref, jj, imin, imax
-    REAL :: width,beta, a, newbeta
-
-    REAL, DIMENSION(-nhalo:ncube+nhalo, nhalo+1) :: prealpha !changed compared to non-extended
-    REAL, DIMENSION(-nhalo:ncube+nhalo, nhalo+1) :: newalpha !changed compared to non-extended
-
-    REAL, DIMENSION(-nhalo:ncube+nhalo, -nhalo:ncube+nhalo, 6) :: yarg
-
-    ! Use 0.0 order interpolation to begin
-    CALL CubedSphereFillHalo(parg, yarg, np, ncube, nhalo+1)
-
-    zarg(:,:) = yarg(:,:,np)
-
-    ! Calculate the overlapping alpha coordinates
-    width = 0.5 * pi / DBLE(ncube-1) ! dx
-
-    newalpha = -9999999999999999.0
-    prealpha = -9999999999999999.0
-
-    DO jj = 1, nhalo+1
-!      DO ii = 0, ncube
-      DO ii = 1-jj, ncube-1+jj !changed compared to non-extended
-        prealpha(ii, jj) =  width * (DBLE(ii-1) + 0.5) - 0.25 * pi
-        beta             = -width * (DBLE(jj-1) + 0.5) - 0.25 * pi
-
-        CALL CubedSphereABPFromABP(prealpha(ii,jj), beta   , 1, 5, &
-                                   newalpha(ii,jj), newbeta)
-      ENDDO
-    ENDDO
-
-    ! Now apply linear interpolation to obtain edge components
-    DO jj = 1, nhalo+1
-      ! Reset the reference index
-      iref = 3-jj 
-
-      ! Interpolation can be applied to more elements after first band
-      !
-      imin = 2-jj       !changed compared to non-extended
-      imax = ncube-2+jj !changed compared to non-extended
-      !
-      ! Apply linear interpolation
-      !
-      DO ii = imin, imax
-        DO WHILE ((iref .NE. ncube-1) .AND. &
-                  (newalpha(ii,jj) > prealpha(iref,jj)))
-          iref = iref + 1
-        ENDDO
-
-        IF ((newalpha(ii,jj)  >   prealpha(iref-1,jj)) .AND.    &
-            (newalpha(ii,jj) .LE. prealpha(iref  ,jj)))      &
-        THEN
-          a = (newalpha(ii,jj)   - prealpha(iref-1,jj)) / &
-              (prealpha(iref,jj) - prealpha(iref-1,jj))
-
-          IF ((a < 0.0) .OR. (a > 1.)) THEN
-            WRITE (*,*) 'FAIL in CubedSphereFillHalo_Linear'
-            WRITE (*,*) 'a out of bounds'
-            STOP
-          ENDIF
-
-          ! Bottom edge of panel
-          zarg(ii, 1-jj) =                   &
-            (1. - a) * yarg(iref-1, 1-jj, np) + &
-                  a  * yarg(iref  , 1-jj, np)
-          
-          ! Left edge of panel
-          zarg(1-jj, ii) =                   &
-            (1. - a) * yarg(1-jj, iref-1, np) + &
-                  a  * yarg(1-jj, iref  , np)
-
-          ! Top edge of panel
-          zarg(ii, ncube+jj-1) =                   &
-            (1. - a) * yarg(iref-1, ncube+jj-1, np) + &
-                  a  * yarg(iref  , ncube+jj-1, np)
-
-          ! Right edge of panel
-          zarg(ncube+jj-1, ii) =                   &
-            (1. - a) * yarg(ncube+jj-1, iref-1, np) + &
-                  a  * yarg(ncube+jj-1, iref  , np)
-
-        ELSE
-          WRITE (*,*) 'FAIL in CubedSphereFillHalo_Linear'
-          WRITE (*,*) 'ii: ', ii, ' jj: ', jj
-          WRITE (*,*) 'newalpha: ', newalpha(ii,jj)
-          WRITE (*,*) 'prealpha: ', prealpha(iref-1,jj), '-', prealpha(iref,jj)
-          STOP
-        ENDIF
-      ENDDO
-    ENDDO
-
-    ! Fill in corner bits
-    DO ii=0,nhalo-1
-      !
-      ! Diagonal lower left
-      !
-      zarg(0-ii, 0-ii) =                         &
-           0.25 * (zarg( 1-ii,0-ii) + zarg(0-ii, 1-ii) + &
-                   zarg(-1-ii,0-ii) + zarg(0-ii,-1-ii))
-      !
-      ! Diagonal upper left
-      !
-      zarg(0-ii, ncube+ii) =                                 &
-      0.25 * (zarg(0-ii,ncube-1+ii) + zarg(0-ii,ncube+1+ii) + &
-              zarg(-1-ii,ncube+ii ) + zarg(1-ii,ncube+ii  ))
-      !
-      ! Diagonal lower right
-      !
-      zarg(ncube+ii, 0-ii) =                                 &
-           0.25 * (zarg(ncube-1+ii, 0-ii) + zarg(ncube+1+ii,0-ii) + &
-                   zarg(ncube+ii  ,-1-ii) + zarg(ncube+ii  ,1-ii))
-      !
-      ! Diagonal upper right
-      !
-      zarg(ncube+ii, ncube+ii) =                                     &
-           0.25 * (zarg(ncube-1+ii,ncube+ii  ) + zarg(ncube+1+ii,ncube+ii  ) + &
-                   zarg(ncube+ii  ,ncube-1+ii) + zarg(ncube+ii  ,ncube+1+ii))
-    END DO
-
-    parg_halo = zarg(1-nhalo:ncube+nhalo-1, 1-nhalo:ncube+nhalo-1)
-  END SUBROUTINE CubedSphereFillHalo_Linear_extended
-
-
-  !------------------------------------------------------------------------------
-  ! SUBROUTINE CubedSphereFillHalo_Cubic
-  !
-  ! Description:
-  !   Recompute the cubed sphere data storage array, with the addition of a
-  !   2-element halo region around the specified panel.  Use higher order 
-  !   interpolation to translate between panels.
-  !
-  ! Parameters:
-  !   parg - Current panel values
-  !   zarg (OUT) - Calculated panel values with halo/ghost region
-  !   np - Panel number
-  !   ncube - Dimension of the cubed sphere (# of grid lines)
-  !------------------------------------------------------------------------------
-  SUBROUTINE CubedSphereFillHalo_Cubic(parg, zarg, np, ncube)
-
-!    USE CubedSphereTrans  ! Cubed sphere transforms
-!    USE MathUtils         ! Has function for 1D cubic interpolation
-
-    IMPLICIT NONE
-
-    INTEGER , PARAMETER :: nhalo = 2
-
-    INTEGER , INTENT(IN) :: np, ncube
-
-    REAL , DIMENSION(ncube-1, ncube-1, 6), INTENT(IN) :: parg
-
-    REAL ,                                            &
-         DIMENSION(1-nhalo:ncube+nhalo-1, 1-nhalo:ncube+nhalo-1, 6), &
-         INTENT(OUT) :: zarg
-
-
-    ! Local variables
-    INTEGER  :: ii, iref, ibaseref, jj, imin, imax
-    REAL :: width, beta, newbeta
-
-    REAL, DIMENSION(0:ncube, nhalo) :: prealpha
-    REAL, DIMENSION(0:ncube, nhalo) :: newalpha
-
-    REAL, DIMENSION(1-nhalo:ncube+nhalo-1, 1-nhalo:ncube+nhalo-1, 6) :: yarg
-
-    ! Use 0.0 order interpolation to begin
-    CALL CubedSphereFillHalo(parg, yarg, np, ncube, nhalo)
-
-    zarg(:,:,np) = yarg(:,:,np)
-
-    ! Calculate the overlapping alpha coordinates
-    width = 0.5 * pi / DBLE(ncube-1)
-
-    DO jj = 1, nhalo
-      DO ii = 0, ncube
-        !
-        ! alpha,beta for the cell center (extending the panel)
-        !
-        prealpha(ii, jj) = width * (DBLE(ii-1) + 0.5) - 0.25 * pi
-        beta = - width * (DBLE(jj-1) + 0.5) - 0.25 * pi
-
-        CALL CubedSphereABPFromABP(prealpha(ii,jj), beta, 1, 5, &
-                                   newalpha(ii,jj), newbeta)
-      ENDDO
-    ENDDO
-
-    ! Now apply cubic interpolation to obtain edge components
-    DO jj = 1, nhalo
-      ! Reset the reference index, which gives the element in newalpha that
-      ! is closest to ii, looking towards larger values of alpha.
-      iref = 2 
-
-      ! Interpolation can be applied to more elements after first band
-      !IF (jj == 1) THEN
-      !  imin = 1
-      !  imax = ncube-1
-      !ELSE
-        imin = 0
-        imax = ncube
-      !ENDIF
-
-      ! Apply cubic interpolation
-      DO ii = imin, imax
-        DO WHILE ((iref .NE. ncube-1) .AND. &
-                  (newalpha(ii,jj) > prealpha(iref,jj)))
-          iref = iref + 1
-        ENDDO
-
-        ! Smallest index for cubic interpolation - apply special consideration
-        IF (iref == 2) THEN
-          ibaseref = iref-1
-
-        ! Largest index for cubic interpolation - apply special consideration
-        ELSEIF (iref == ncube-1) THEN
-          ibaseref = iref-3
-
-        ! Normal range
-        ELSE
-          ibaseref = iref-2
-        ENDIF
-
-        ! Bottom edge of panel
-        zarg(ii, 1-jj, np) =                                &
-          CUBIC_EQUISPACE_INTERP(                           &
-            width, newalpha(ii,jj) - prealpha(ibaseref,jj), &
-            yarg(ibaseref:ibaseref+3, 1-jj, np))
-
-        ! Left edge of panel
-        zarg(1-jj, ii, np) =                                &
-          CUBIC_EQUISPACE_INTERP(                           &
-            width, newalpha(ii,jj) - prealpha(ibaseref,jj), &
-            yarg(1-jj, ibaseref:ibaseref+3, np))
-
-        ! Top edge of panel
-        zarg(ii, ncube+jj-1, np) =                          &
-          CUBIC_EQUISPACE_INTERP(                           &
-            width, newalpha(ii,jj) - prealpha(ibaseref,jj), &
-            yarg(ibaseref:ibaseref+3, ncube+jj-1, np))
-
-        ! Right edge of panel
-        zarg(ncube+jj-1, ii, np) =                          &
-          CUBIC_EQUISPACE_INTERP(                           &
-            width, newalpha(ii,jj) - prealpha(ibaseref,jj), &
-            yarg(ncube+jj-1, ibaseref:ibaseref+3, np))
-
-      ENDDO
-    ENDDO
-
-    ! Fill in corner bits
-    zarg(0, 0, np) =                         &
-      0.25 * (zarg(1,0,np) + zarg(0,1,np) + &
-               zarg(-1,0,np) + zarg(0,-1,np))
-    zarg(0, ncube, np) =                                 &
-      0.25 * (zarg(0,ncube-1,np) + zarg(0,ncube+1,np) + &
-               zarg(-1,ncube,np)  + zarg(1,ncube,np))
-    zarg(ncube, 0, np) =                                 &
-      0.25 * (zarg(ncube-1,0,np) + zarg(ncube+1,0,np) + &
-               zarg(ncube,-1,np)  + zarg(ncube,1,np))
-    zarg(ncube, ncube, np) =                                     &
-      0.25 * (zarg(ncube-1,ncube,np) + zarg(ncube+1,ncube,np) + &
-               zarg(ncube,ncube-1,np) + zarg(ncube,ncube+1,np))
-
-  END SUBROUTINE CubedSphereFillHalo_Cubic
-
-  !------------------------------------------------------------------------------
-  ! SUBROUTINE CubedSphereABPFromABP
-  !
-  ! Description:
-  !   Determine the (alpha,beta,idest) coordinate of a source point on
-  !   panel isource.
-  !
-  ! Parameters:
-  !   alpha_in - Alpha coordinate in
-  !   beta_in - Beta coordinate in
-  !   isource - Source panel
-  !   idest - Destination panel
-  !   alpha_out (OUT) - Alpha coordinate out
-  !   beta_out (OUT) - Beta coordiante out
-  !------------------------------------------------------------------------------
-  SUBROUTINE CubedSphereABPFromABP(alpha_in,  beta_in, isource, idest, &
-                                   alpha_out, beta_out)
-
-    IMPLICIT NONE
-
-    REAL, INTENT(IN)  :: alpha_in, beta_in
-    INTEGER , INTENT(IN)  :: isource, idest
-    REAL, INTENT(OUT) :: alpha_out, beta_out
-
-    ! Local variables
-    REAL :: a1, b1
-    REAL :: xx, yy, zz
-    REAL :: sx, sy, sz
-
-    ! Convert to relative Cartesian coordinates
-    a1 = TAN(alpha_in)
-    b1 = TAN(beta_in)
-
-    sz = (1. + a1 * a1 + b1 * b1)**(-0.5)
-    sx = sz * a1
-    sy = sz * b1
-
-    ! Convert to full Cartesian coordinates
-    IF (isource == 6) THEN
-      yy = sx; xx = -sy; zz = sz
-
-    ELSEIF (isource == 5) THEN
-      yy = sx; xx = sy; zz = -sz
-
-    ELSEIF (isource == 1) THEN
-      yy = sx; zz = sy; xx = sz
-
-    ELSEIF (isource == 3) THEN
-      yy = -sx; zz = sy; xx = -sz
-
-    ELSEIF (isource == 2) THEN
-      xx = -sx; zz = sy; yy = sz
-
-    ELSEIF (isource == 4) THEN
-      xx = sx; zz = sy; yy = -sz
-
-    ELSE
-      WRITE(*,*) 'Fatal Error: Source panel invalid in CubedSphereABPFromABP'
-      WRITE(*,*) 'panel = ', isource
-      STOP
-    ENDIF
-
-    ! Convert to relative Cartesian coordinates on destination panel
-    IF (idest == 6) THEN
-      sx = yy; sy = -xx; sz = zz
-
-    ELSEIF (idest == 5) THEN
-      sx = yy; sy = xx; sz = -zz
-
-    ELSEIF (idest == 1) THEN
-      sx = yy; sy = zz; sz = xx
-
-    ELSEIF (idest == 3) THEN
-      sx = -yy; sy = zz; sz = -xx
-
-    ELSEIF (idest == 2) THEN
-      sx = -xx; sy = zz; sz = yy
-
-    ELSEIF (idest == 4) THEN
-      sx = xx; sy = zz; sz = -yy
-
-    ELSE
-      WRITE(*,*) 'Fatal Error: Dest panel invalid in CubedSphereABPFromABP'
-      WRITE(*,*) 'panel = ', idest
-      STOP
-    ENDIF
-    IF (sz < 0) THEN
-      WRITE(*,*) 'Fatal Error: In CubedSphereABPFromABP'
-      WRITE(*,*) 'Invalid relative Z coordinate'
-      STOP
-    ENDIF
-
-    ! Use panel information to calculate (alpha, beta) coords
-    alpha_out = ATAN(sx / sz)
-    beta_out = ATAN(sy / sz)
-
-  END SUBROUTINE
-
-
-  !------------------------------------------------------------------------------
-  ! FUNCTION CUBIC_EQUISPACE_INTERP
-  !
-  ! Description:
-  !   Apply cubic interpolation on the specified array of values, where all
-  !   points are equally spaced.
-  !
-  ! Parameters:
-  !   dx - Spacing of points
-  !   x - X coordinate where interpolation is to be applied
-  !   y - Array of 4 values = f(x + k * dx) where k = 0,1,2,3
-  !------------------------------------------------------------------------------
-  FUNCTION CUBIC_EQUISPACE_INTERP(dx, x, y)
-    
-    IMPLICIT NONE
-    
-    REAL  :: CUBIC_EQUISPACE_INTERP
-    REAL  :: dx, x
-    REAL , DIMENSION(1:4) :: y
-    
-    CUBIC_EQUISPACE_INTERP =                                                   &
-         (-y(1) / (6.0 * dx**3)) * (x - dx) * (x - 2.0 * dx) * (x - 3.0 * dx) + &
-         ( y(2) / (2.0 * dx**3)) * (x) * (x - 2.0 * dx) * (x - 3.0 * dx) +      &
-         (-y(3) / (2.0 * dx**3)) * (x) * (x - dx) * (x - 3.0 * dx) +            &
-         ( y(4) / (6.0 * dx**3)) * (x) * (x - dx) * (x - 2.0 * dx)
-    
-  END FUNCTION CUBIC_EQUISPACE_INTERP
+  subroutine CubedSphereFillGhost
+  
+  end subroutine CubedSphereFillGhost
   
   ! Fill up halo with ghost points  
   subroutine fill_ghost(stat)
@@ -783,11 +190,10 @@ MODULE ghost_mod
     integer iPatch
 
     do iPatch = ifs, ife
-      call CubedSphereFillHalo_Linear_extended(stat%zonal_wind     (ids:ide,jds:jde,:), stat%zonal_wind     (:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
-      call CubedSphereFillHalo_Linear_extended(stat%meridional_wind(ids:ide,jds:jde,:), stat%meridional_wind(:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
-      call CubedSphereFillHalo_Linear_extended(stat%phi            (ids:ide,jds:jde,:), stat%phi            (:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
+      !call CubedSphereFillHalo_Linear_extended(stat%zonal_wind     (ids:ide,jds:jde,:), stat%zonal_wind     (:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
+      !call CubedSphereFillHalo_Linear_extended(stat%meridional_wind(ids:ide,jds:jde,:), stat%meridional_wind(:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
+      !call CubedSphereFillHalo_Linear_extended(stat%phi            (ids:ide,jds:jde,:), stat%phi            (:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
     enddo
   end subroutine fill_ghost
   
 END MODULE ghost_mod
-
