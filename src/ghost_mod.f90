@@ -53,9 +53,6 @@ MODULE ghost_mod
     enddo
     
     X_RAW = mesh%xP(ids:ide,1,iPatch)
-    do i = ids,ide
-      print*,i,X_RAW(i),ghost%X(i,1),ghost%X(i,2)
-    enddo
     
     ! Calculate reference points
     ! Now apply linear interpolation to obtain edge components
@@ -89,7 +86,6 @@ MODULE ghost_mod
           ENDIF
         ENDIF
       ENDDO
-      stop
     ENDDO
     
   end subroutine initGhost
@@ -100,100 +96,120 @@ MODULE ghost_mod
   ! Description:
   !   Recompute the cubed sphere data storage array, with the addition of a
   !   halo region around the specified panel.
-  !
-  ! Parameters:
-  !   parg - Current panel values
-  !   zarg (OUT) - Calculated panel values with halo/ghost region
-  !   np - Panel number
-  !   ncube - Dimension of the cubed sphere (# of grid lines)
-  !   nhalo - Number of halo/ghost elements around each panel
   !------------------------------------------------------------------------------
-  SUBROUTINE CubedSphereFillHalo(parg, zarg, np, ncube, nhalo)
+  SUBROUTINE CubedSphereFillHalo(field)
 
     IMPLICIT NONE
 
-    INTEGER, INTENT(IN) :: np, ncube,nhalo
-
-    REAL, DIMENSION(ncube-1              , ncube-1              , 6), INTENT(IN ) :: parg
-    REAL, DIMENSION(1-nhalo:ncube+nhalo-1, 1-nhalo:ncube+nhalo-1, 6), INTENT(OUT) :: zarg
+    REAL, DIMENSION(ips:ipe,jps:jpe,ifs:ife), INTENT(INOUT) :: field
+    
+    REAL, DIMENSION(ids:ide,jds:jde,ifs:ife) :: field_inner
 
     ! Local variables
-    INTEGER                :: jh
+    INTEGER :: i
     
     !zarg = 0.0 !DBG
-    zarg(1:ncube-1          ,1:ncube-1          ,np) = parg(1:ncube-1,1:ncube-1,np)
-    zarg(1-nhalo:0          ,1-nhalo:0          ,np) = 0.0
-    zarg(1-nhalo:0          ,ncube:ncube+nhalo-1,np) = 0.0
-    zarg(ncube:ncube+nhalo-1,1-nhalo:0          ,np) = 0.0
-    zarg(ncube:ncube+nhalo-1,ncube:ncube+nhalo-1,np) = 0.0
+    field_inner = field(ids:ide,jds:jde,ifs:ife)
 
     ! Equatorial panels
-    IF (np==1) THEN
-       DO jh=1,nhalo
-          zarg(ncube+jh-1,1:ncube-1 ,1) = parg(jh       ,1:ncube-1 ,2)  !exchange right
-          zarg(1-jh      ,1:ncube-1 ,1) = parg(ncube-jh ,1:ncube-1 ,4)  !exchange left
-          zarg(1:ncube-1 ,1-jh      ,1) = parg(1:ncube-1,ncube-jh  ,6)  !exchange below
-          zarg(1:ncube-1 ,ncube+jh-1,1) = parg(1:ncube-1,jh        ,5)  !exchange over
+    !IF (np==1) THEN
+       DO i=1,nPVHalo
+          field(1-i    ,jds:jde,1) = field_inner(ide-i  ,jds:jde,4)  !exchange left
+          field(ide+i  ,jds:jde,1) = field_inner(i+1    ,jds:jde,2)  !exchange right
+          field(ids:ide,1-i    ,1) = field_inner(ids:ide,jde-i  ,6)  !exchange below
+          field(ids:ide,jde+i  ,1) = field_inner(ids:ide,i+1    ,5)  !exchange over
        ENDDO
-    ELSE IF (np==2) THEN
-       DO jh=1,nhalo
-          zarg(1-jh      ,1:ncube-1 ,2) = parg(ncube-jh,1:ncube-1   ,1)  !exchange left
-          zarg(ncube+jh-1,1:ncube-1 ,2) = parg(jh      ,1:ncube-1   ,3)  !exchange right
-          zarg(1:ncube-1 ,1-jh      ,2) = parg(ncube-jh,ncube-1:1:-1,6)  !exchange below
-          zarg(1:ncube-1 ,ncube+jh-1,2) = parg(ncube-jh,1:ncube-1   ,5)  !exchange over
+    !ELSE IF (np==2) THEN
+       DO i=1,nPVHalo
+          field(1-i    ,jds:jde,2) = field_inner(ide-i  ,jds:jde   ,1)  !exchange left
+          field(ide+i  ,jds:jde,2) = field_inner(i+1    ,jds:jde   ,3)  !exchange right
+          field(ids:ide,1-i    ,2) = field_inner(ide-i  ,jde:jds:-1,6)  !exchange below
+          field(ids:ide,jde+i  ,2) = field_inner(ide-i  ,jds:jde   ,5)  !exchange over
        ENDDO
-    ELSE IF (np==3) THEN
-       DO jh=1,nhalo
-          zarg(ncube+jh-1,1:ncube-1 ,3) = parg(jh          ,1:ncube-1,4)  !exchange right
-          zarg(1-jh      ,1:ncube-1 ,3) = parg(ncube-jh    ,1:ncube-1,2)  !exchange left
-          zarg(1:ncube-1 ,1-jh      ,3) = parg(ncube-1:1:-1,jh       ,6)  !exchange below
-          zarg(1:ncube-1 ,ncube+jh-1,3) = parg(ncube-1:1:-1,ncube-jh ,5)  !exchange over
+    !ELSE IF (np==3) THEN
+       DO i=1,nPVHalo
+          field(1-i    ,jds:jde,3) = field_inner(ide-i     ,jds:jde,2)  !exchange left
+          field(ide+i  ,jds:jde,3) = field_inner(i+1       ,jds:jde,4)  !exchange right
+          field(ids:ide,1-i    ,3) = field_inner(ide:ids:-1,i+1    ,6)  !exchange below
+          field(ids:ide,jde+i  ,3) = field_inner(ide:ids:-1,jde-i  ,5)  !exchange over
        ENDDO
-    ELSE IF (np==4) THEN
-       DO jh=1,nhalo
-          zarg(1-jh      ,1:ncube-1 ,4) = parg(ncube-jh,1:ncube-1   ,3) !exchange left
-          zarg(ncube+jh-1,1:ncube-1 ,4) = parg(jh      ,1:ncube-1   ,1) !exchange right
-          zarg(1:ncube-1 ,1-jh      ,4) = parg(jh      ,1:ncube-1   ,6) !exchange below
-          zarg(1:ncube-1 ,ncube+jh-1,4) = parg(jh      ,ncube-1:1:-1,5) !exchange over
+    !ELSE IF (np==4) THEN
+       DO i=1,nPVHalo
+          field(1-i    ,jds:jde,4) = field_inner(ide-i     ,jds:jde   ,3) !exchange left
+          field(ide+i  ,jds:jde,4) = field_inner(i+1       ,jds:jde   ,1) !exchange right
+          field(ids:ide,1-i    ,4) = field_inner(i+1       ,jds:jde   ,6) !exchange below
+          field(ids:ide,jde+i  ,4) = field_inner(i+1       ,jde:jds:-1,5) !exchange over
        ENDDO
     ! Top panel
-    ELSE IF (np==5) THEN
-       DO jh=1,nhalo
-          zarg(1-jh      ,1:ncube-1 ,5) = parg(ncube-1:1:-1,ncube-jh,4) !exchange left
-          zarg(ncube+jh-1,1:ncube-1 ,5) = parg(1:ncube-1   ,ncube-jh,2) !exchange right
-          zarg(1:ncube-1 ,1-jh      ,5) = parg(1:ncube-1   ,ncube-jh,1) !exchange below
-          zarg(1:ncube-1 ,ncube+jh-1,5) = parg(ncube-1:1:-1,ncube-jh,3) !exchange over
+    !ELSE IF (np==5) THEN
+       DO i=1,nPVHalo
+          field(1-i    ,jds:jde,5) = field_inner(ide:ids:-1,jde-i,4) !exchange left
+          field(ide+i  ,jds:jde,5) = field_inner(ids:ide   ,jde-i,2) !exchange right
+          field(ids:ide,1-i    ,5) = field_inner(ids:ide   ,jde-i,1) !exchange below
+          field(ids:ide,jde+i  ,5) = field_inner(ide:ids:-1,jde-i,3) !exchange over
        ENDDO
     ! Bottom panel
-    ELSE IF (np==6) THEN
-       DO jh=1,nhalo
-          zarg(1-jh      ,1:ncube-1 ,6) = parg(1:ncube-1   ,jh      ,4) !exchange left
-          zarg(ncube+jh-1,1:ncube-1 ,6) = parg(ncube-1:1:-1,jh      ,2) !exchange right
-          zarg(1:ncube-1 ,1-jh      ,6) = parg(ncube-1:1:-1,jh      ,3) !exchange below
-          zarg(1:ncube-1 ,ncube+jh-1,6) = parg(1:ncube-1   ,jh      ,1) !exchange over
+    !ELSE IF (np==6) THEN
+       DO i=1,nPVHalo
+          field(1-i    ,jds:jde,6) = field_inner(ids:ide   ,i+1  ,4) !exchange left
+          field(ide+i  ,jds:jde,6) = field_inner(ide:ids:-1,i+1  ,2) !exchange right
+          field(ids:ide,1-i    ,6) = field_inner(ide:ids:-1,i+1  ,3) !exchange below
+          field(ids:ide,jde+i  ,6) = field_inner(ids:ide   ,i+1  ,1) !exchange over
        ENDDO
-    ELSE
-       WRITE (*,*) 'Fatal error: In CubedSphereFillHalo'
-       WRITE (*,*) 'Invalid panel id ', np
-       STOP
-    ENDIF
+    !ELSE
+    !   WRITE (*,*) 'Fatal error: In CubedSphereFillHalo'
+    !   WRITE (*,*) 'Invalid panel id ', np
+    !   STOP
+    !ENDIF
   END SUBROUTINE CubedSphereFillHalo
-
-  subroutine CubedSphereFillGhost
+  
+  subroutine CubedSphereFillGhost(field)
+    real, intent(inout) :: field(ips:ipe,jps:jpe,ifs:ife)
+    
+    real ghost_target(ips:ipe,jps:jpe,ifs:ife)
+    
+    integer i,j,iPatch
+    
+    ghost_target                          = FillValue
+    ghost_target(ids:ide,jds:jde,ifs:ife) = field(ids:ide,jds:jde,ifs:ife)
+    
+    call CubedSphereFillHalo(field)
+    
+    do iPatch = ifs, ife
+      do j = 1, nPVHalo
+        ! Left boundary
+        call linear_interp(ghost_target(ids-j,jds:jde,iPatch),field(ids-j,jds:jde,iPatch),ghost%iref(:,j),ghost%coefL(:,j),ghost%coefR(:,j))
+        ! Rigth boundary
+        call linear_interp(ghost_target(ide+j,jds:jde,iPatch),field(ide+j,jds:jde,iPatch),ghost%iref(:,j),ghost%coefL(:,j),ghost%coefR(:,j))
+        ! Top boundary
+        call linear_interp(ghost_target(ids:ide,jde+j,iPatch),field(ids:ide,jde+j,iPatch),ghost%iref(:,j),ghost%coefL(:,j),ghost%coefR(:,j))
+        ! Bottom boundary
+        call linear_interp(ghost_target(ids:ide,jds-j,iPatch),field(ids:ide,jds-j,iPatch),ghost%iref(:,j),ghost%coefL(:,j),ghost%coefR(:,j))
+      enddo
+    enddo
+    
+    field = ghost_target
   
   end subroutine CubedSphereFillGhost
   
   ! Fill up halo with ghost points  
   subroutine fill_ghost(stat)
     type(stat_field), intent(inout) :: stat
-    
-    integer iPatch
 
-    do iPatch = ifs, ife
-      !call CubedSphereFillHalo_Linear_extended(stat%zonal_wind     (ids:ide,jds:jde,:), stat%zonal_wind     (:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
-      !call CubedSphereFillHalo_Linear_extended(stat%meridional_wind(ids:ide,jds:jde,:), stat%meridional_wind(:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
-      !call CubedSphereFillHalo_Linear_extended(stat%phi            (ids:ide,jds:jde,:), stat%phi            (:,:,iPatch), iPatch, ide+1, xhalo*(DOF-1))
-    enddo
+    call CubedSphereFillGhost(stat%zonal_wind     )
+    call CubedSphereFillGhost(stat%meridional_wind)
+    call CubedSphereFillGhost(stat%phi            )
   end subroutine fill_ghost
+  
+  subroutine linear_interp(dest,src,iref,coefL,coefR)
+    real   , intent(out) :: dest (ids:ide)
+    real   , intent(in ) :: src  (ids:ide)
+    integer, intent(in ) :: iref (ids:ide)
+    real   , intent(in ) :: coefL(ids:ide)
+    real   , intent(in ) :: coefR(ids:ide)
+    
+    dest = coefL * src(iref-1) + coefR * src(iref)
+    
+  end subroutine linear_interp
   
 END MODULE ghost_mod

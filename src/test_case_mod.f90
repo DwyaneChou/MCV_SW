@@ -4,6 +4,7 @@ module test_case_mod
   use ghost_mod
   use stat_mod
   use projection_mod
+  use spatial_operators_mod
   implicit none
   
   contains
@@ -41,6 +42,8 @@ module test_case_mod
         enddo
       enddo
     enddo
+      
+    call convert_wind_cov2contrav(stat)
     
     mesh%dphisdx = 0.
     mesh%dphisdy = 0.

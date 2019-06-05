@@ -9,6 +9,9 @@ MODULE tend_mod
     real, dimension(:,:,:), allocatable :: v
     real, dimension(:,:,:), allocatable :: phi
     
+    real, dimension(:,:,:), allocatable :: contraU
+    real, dimension(:,:,:), allocatable :: contraV
+    
     real, dimension(:,:,:), allocatable :: zonal_wind
     real, dimension(:,:,:), allocatable :: meridional_wind
   end type tend_field
@@ -26,6 +29,9 @@ MODULE tend_mod
       allocate(tend(iT)%u  (ids:ide,jds:jde,Nf))
       allocate(tend(iT)%v  (ids:ide,jds:jde,Nf))
       allocate(tend(iT)%phi(ids:ide,jds:jde,Nf))
+      
+      allocate(tend(iT)%contraU(ids:ide,jds:jde,Nf))
+      allocate(tend(iT)%contraV(ids:ide,jds:jde,Nf))
       
       allocate(tend(iT)%zonal_wind     (ids:ide,jds:jde,ifs:ife))
       allocate(tend(iT)%meridional_wind(ids:ide,jds:jde,ifs:ife))

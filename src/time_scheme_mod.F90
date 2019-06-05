@@ -33,6 +33,7 @@
       call fill_ghost       (stat(two))
       call unify_bdy_stat   (stat(two))
       call convert_wind_SP2P(stat(two))
+      call convert_wind_cov2contrav(stat(two))
       
       call spatial_operator (stat(two), tend(two))
       call update_stat      (stat(three), stat(one), tend(two), 0.5 * dt)
@@ -40,6 +41,7 @@
       call fill_ghost       (stat(three))
       call unify_bdy_stat   (stat(three))
       call convert_wind_SP2P(stat(three))
+      call convert_wind_cov2contrav(stat(three))
       
       call spatial_operator (stat(three), tend(three))
       call update_stat      (stat(four), stat(one), tend(three), dt)
@@ -47,6 +49,7 @@
       call fill_ghost       (stat(four))
       call unify_bdy_stat   (stat(four))
       call convert_wind_SP2P(stat(four))
+      call convert_wind_cov2contrav(stat(four))
       
       call spatial_operator(stat(four), tend(four))
       
@@ -59,6 +62,7 @@
       call fill_ghost       (stat_new)
       call unify_bdy_stat   (stat_new)
       call convert_wind_SP2P(stat_new)
+      call convert_wind_cov2contrav(stat_new)
 
     end subroutine RK4
     

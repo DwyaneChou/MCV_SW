@@ -20,9 +20,6 @@ MODULE spatial_operators_mod
       
       real vorticity(ids:ide,jds:jde,ifs:ife)
       
-      real contraU   (ips:ipe,jps:jpe,ifs:ife) ! contravariant u
-      real contraV   (ips:ipe,jps:jpe,ifs:ife) ! contravariant v
-      
       real lambda_x(ils:ile) ! eigenvalue along x direction
       real lambda_y(jls:jle) ! eigenvalue along y direction
       
@@ -44,17 +41,9 @@ MODULE spatial_operators_mod
       integer i,j,iPatch
       integer P1
       
-      do iPatch = ifs, ife
-        do j = jps, jpe
-          do i = ips, ipe
-            call cov2contrav(contraU(i,j,iPatch),contraV(i,j,iPatch),stat%u(i,j,iPatch),stat%v(i,j,iPatch),mesh%matrixIG(:,:,i,j,iPatch))
-          enddo
-        enddo
-      enddo
-      
-      E    = stat%phi + 0.5 * (contraU * stat%u + contraV * stat%v)
-      phiu = stat%phi * contraU
-      phiv = stat%phi * contraV
+      E    = stat%phi + 0.5 * (stat%contraU * stat%u + stat%contraV * stat%v)
+      phiu = stat%phi * stat%contraU
+      phiv = stat%phi * stat%contraV
       
       ! calculate tend in x direction
       do iPatch = ifs, ife
@@ -66,7 +55,7 @@ MODULE spatial_operators_mod
           
           do i = ils, ile
             P1          = pvIdx(1,i)
-            lambda_x(i) = eigenvalue_x(contraU(P1,j,iPatch),stat%phi(P1,j,iPatch),mesh%matrixIG(:,:,P1,j,iPatch))
+            lambda_x(i) = eigenvalue_x(stat%contraU(P1,j,iPatch),stat%phi(P1,j,iPatch),mesh%matrixIG(:,:,P1,j,iPatch))
           enddo
           
           call calc_tendP(flux_x(:,j,iPatch),Ex   ,ux  ,lambda_x)
@@ -84,7 +73,7 @@ MODULE spatial_operators_mod
           
           do j = jls, jle
             P1          = pvIdx(1,j)
-            lambda_y(j) = eigenvalue_y(contraV(i,P1,iPatch),stat%phi(i,P1,iPatch),mesh%matrixIG(:,:,i,P1,iPatch))
+            lambda_y(j) = eigenvalue_y(stat%contraV(i,P1,iPatch),stat%phi(i,P1,iPatch),mesh%matrixIG(:,:,i,P1,iPatch))
           enddo
             
           call calc_tendP(flux_y(i,:,iPatch),Ey   ,vy  ,lambda_y)
@@ -94,17 +83,17 @@ MODULE spatial_operators_mod
       
       call calc_vorticity(vorticity,stat%u,stat%v)
       
-      tend%u   = -flux_x + mesh%sqrtG(ids:ide,jds:jde,:) * (vorticity + mesh%f(ids:ide,jds:jde,:)) * contraV(ids:ide,jds:jde,:) - mesh%dphisdx(ids:ide,jds:jde,:)
-      tend%v   = -flux_y - mesh%sqrtG(ids:ide,jds:jde,:) * (vorticity + mesh%f(ids:ide,jds:jde,:)) * contraU(ids:ide,jds:jde,:) - mesh%dphisdy(ids:ide,jds:jde,:)
-      tend%phi = -div_x - div_y - ( stat%phi  (ids:ide,jds:jde,:) * contraU(ids:ide,jds:jde,:) * mesh%dsqrtGdx(ids:ide,jds:jde,:)   &
-                                  + stat%phi  (ids:ide,jds:jde,:) * contraV(ids:ide,jds:jde,:) * mesh%dsqrtGdy(ids:ide,jds:jde,:) ) &
+      tend%u   = -flux_x + mesh%sqrtG(ids:ide,jds:jde,:) * (vorticity + mesh%f(ids:ide,jds:jde,:)) * stat%contraV(ids:ide,jds:jde,:) - mesh%dphisdx(ids:ide,jds:jde,:)
+      tend%v   = -flux_y - mesh%sqrtG(ids:ide,jds:jde,:) * (vorticity + mesh%f(ids:ide,jds:jde,:)) * stat%contraU(ids:ide,jds:jde,:) - mesh%dphisdy(ids:ide,jds:jde,:)
+      tend%phi = -div_x - div_y - ( stat%phi  (ids:ide,jds:jde,:) * stat%contraU(ids:ide,jds:jde,:) * mesh%dsqrtGdx(ids:ide,jds:jde,:)   &
+                                  + stat%phi  (ids:ide,jds:jde,:) * stat%contraV(ids:ide,jds:jde,:) * mesh%dsqrtGdy(ids:ide,jds:jde,:) ) &
                                   / mesh%sqrtG(ids:ide,jds:jde,:)
       
       !print*,'min/max value of u         : ', minval(stat%u   ), maxval(stat%u   )
       !print*,'min/max value of v         : ', minval(stat%v   ), maxval(stat%v   )
       !print*,'min/max value of phi       : ', minval(stat%phi ), maxval(stat%phi )
-      !print*,'min/max value of contraU   : ', minval(contraU  ), maxval(contraU  )
-      !print*,'min/max value of contraV   : ', minval(contraV  ), maxval(contraV  )
+      !print*,'min/max value of stat%contraU   : ', minval(stat%contraU  ), maxval(stat%contraU  )
+      !print*,'min/max value of stat%contraV   : ', minval(stat%contraV  ), maxval(stat%contraV  )
       !print*,'min/max value of flux_x    : ', minval(flux_x   ), maxval(flux_x   )
       !print*,'min/max value of flux_y    : ', minval(flux_y   ), maxval(flux_y   )
       !print*,'min/max value of div_x     : ', minval(div_x    ), maxval(div_x    )
@@ -386,5 +375,19 @@ MODULE spatial_operators_mod
       enddo
     
     end subroutine convert_wind_SP2P
+    
+    subroutine convert_wind_cov2contrav(stat)
+      type(stat_field), intent(inout) :: stat
+      
+      integer i,j,iPatch
+      
+      do iPatch = ifs, ife
+        do j = jps, jpe
+          do i = ips, ipe
+            call cov2contrav(stat%contraU(i,j,iPatch),stat%contraV(i,j,iPatch),stat%u(i,j,iPatch),stat%v(i,j,iPatch),mesh%matrixIG(:,:,i,j,iPatch))
+          enddo
+        enddo
+      enddo
+    end subroutine convert_wind_cov2contrav
 END MODULE spatial_operators_mod
 
