@@ -21,8 +21,6 @@
       integer, parameter :: three = -3
       integer, parameter :: four  = -4
       
-      integer iPatch
-      
       stat(one)%phi = stat_old%phi
       stat(one)%u   = stat_old%u
       stat(one)%v   = stat_old%v
@@ -53,9 +51,9 @@
       
       call spatial_operator(stat(four), tend(four))
       
-      tend(new)%phi = (tend(one)%phi + 2.0 * tend(two)%phi + 2.0 * tend(three)%phi + tend(four)%phi) / 6.
-      tend(new)%u   = (tend(one)%u   + 2.0 * tend(two)%u   + 2.0 * tend(three)%u   + tend(four)%u  ) / 6.
-      tend(new)%v   = (tend(one)%v   + 2.0 * tend(two)%v   + 2.0 * tend(three)%v   + tend(four)%v  ) / 6.
+      tend(new)%phi = (tend(one)%phi + 2. * tend(two)%phi + 2. * tend(three)%phi + tend(four)%phi) / 6.
+      tend(new)%u   = (tend(one)%u   + 2. * tend(two)%u   + 2. * tend(three)%u   + tend(four)%u  ) / 6.
+      tend(new)%v   = (tend(one)%v   + 2. * tend(two)%v   + 2. * tend(three)%v   + tend(four)%v  ) / 6.
       
       call update_stat      (stat_new, stat_old, tend(new), dt)
       call convert_wind_P2SP(stat_new)
@@ -66,18 +64,15 @@
 
     end subroutine RK4
     
-    subroutine update_stat(stat_new, stat_old, tend, dt)
+    subroutine update_stat(stat_new, stat_old, tend, inc_t)
       type(stat_field), intent(inout) :: stat_new
       type(stat_field), intent(in   ) :: stat_old
       type(tend_field), intent(in   ) :: tend
+      real            , intent(in   ) :: inc_t
       
-      real   , intent(in ) :: dt
-      
-      integer iPatch
-      
-      stat_new%phi(ids:ide,jds:jde,ifs:ife) = stat_old%phi(ids:ide,jds:jde,ifs:ife) + dt * tend%phi(ids:ide,jds:jde,ifs:ife)
-      stat_new%u  (ids:ide,jds:jde,ifs:ife) = stat_old%u  (ids:ide,jds:jde,ifs:ife) + dt * tend%u  (ids:ide,jds:jde,ifs:ife)
-      stat_new%v  (ids:ide,jds:jde,ifs:ife) = stat_old%v  (ids:ide,jds:jde,ifs:ife) + dt * tend%v  (ids:ide,jds:jde,ifs:ife)
+      stat_new%phi(ids:ide,jds:jde,ifs:ife) = stat_old%phi(ids:ide,jds:jde,ifs:ife) + inc_t * tend%phi(ids:ide,jds:jde,ifs:ife)
+      stat_new%u  (ids:ide,jds:jde,ifs:ife) = stat_old%u  (ids:ide,jds:jde,ifs:ife) + inc_t * tend%u  (ids:ide,jds:jde,ifs:ife)
+      stat_new%v  (ids:ide,jds:jde,ifs:ife) = stat_old%v  (ids:ide,jds:jde,ifs:ife) + inc_t * tend%v  (ids:ide,jds:jde,ifs:ife)
       
     end subroutine update_stat
     

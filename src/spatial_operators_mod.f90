@@ -251,6 +251,7 @@ MODULE spatial_operators_mod
       
     end subroutine calc_vorticity
     
+    ! 4th-order center difference
     subroutine CD4(dqdh,q,dh,ims,ime,its,ite)
       real   , intent(in ) :: q   (ims:ime)
       real   , intent(in ) :: dh
@@ -275,25 +276,29 @@ MODULE spatial_operators_mod
     end subroutine unify_bdy_stat
     
     subroutine unify_bdy_field(field)
-      real ,intent(inout) :: field(ids:ide,jds:jde,ifs:ife)
+      real,intent(inout) :: field(ids:ide,jds:jde,ifs:ife)
+      
+      real field_raw(ids:ide,jds:jde,ifs:ife)
+      
+      field_raw = field
       
       ! Bdy lines
-      field(ids,jds:jde,1) = 0.5 * (field(ids,jds:jde,4) + field(ide,jds:jde,1)) ! left bdy of patch 1
-      field(ids,jds:jde,2) = 0.5 * (field(ids,jds:jde,1) + field(ide,jds:jde,2)) ! left bdy of patch 2
-      field(ids,jds:jde,3) = 0.5 * (field(ids,jds:jde,2) + field(ide,jds:jde,3)) ! left bdy of patch 3
-      field(ids,jds:jde,4) = 0.5 * (field(ids,jds:jde,3) + field(ide,jds:jde,4)) ! left bdy of patch 4
+      field(ids,jds:jde,1) = 0.5 * (field_raw(ids,jds:jde,4) + field_raw(ide,jds:jde,1)) ! left bdy of patch 1
+      field(ids,jds:jde,2) = 0.5 * (field_raw(ids,jds:jde,1) + field_raw(ide,jds:jde,2)) ! left bdy of patch 2
+      field(ids,jds:jde,3) = 0.5 * (field_raw(ids,jds:jde,2) + field_raw(ide,jds:jde,3)) ! left bdy of patch 3
+      field(ids,jds:jde,4) = 0.5 * (field_raw(ids,jds:jde,3) + field_raw(ide,jds:jde,4)) ! left bdy of patch 4
       
-      field(ids:ide,jde,1) = 0.5 * (field(ids:ide,jds,5) + field(ids:ide,jde,1)) ! top bdy of patch 1
-      field(ids:ide,jds,1) = 0.5 * (field(ids:ide,jds,1) + field(ids:ide,jde,6)) ! bottom bdy of patch 1
+      field(ids:ide,jde,1) = 0.5 * (field_raw(ids:ide,jds,5) + field_raw(ids:ide,jde,1)) ! top bdy of patch 1
+      field(ids:ide,jds,1) = 0.5 * (field_raw(ids:ide,jds,1) + field_raw(ids:ide,jde,6)) ! bottom bdy of patch 1
       
-      field(ids:ide,jde,2) = 0.5 * (field(ide,jds:jde,5) + field(ids:ide,jde   ,2)) ! top bdy of patch 2
-      field(ids:ide,jds,2) = 0.5 * (field(ids:ide,jds,2) + field(ide,jde:jds:-1,6)) ! bottom bdy of patch 2
+      field(ids:ide,jde,2) = 0.5 * (field_raw(ide,jds:jde,5) + field_raw(ids:ide,jde   ,2)) ! top bdy of patch 2
+      field(ids:ide,jds,2) = 0.5 * (field_raw(ids:ide,jds,2) + field_raw(ide,jde:jds:-1,6)) ! bottom bdy of patch 2
       
-      field(ids:ide,jde,3) = 0.5 * (field(ids:ide,jde,3) + field(ide:ids:-1,jde,5)) ! top bdy of patch 3
-      field(ids:ide,jds,3) = 0.5 * (field(ids:ide,jds,3) + field(ide:ids:-1,jds,6)) ! bottom bdy of patch 3
+      field(ids:ide,jde,3) = 0.5 * (field_raw(ids:ide,jde,3) + field_raw(ide:ids:-1,jde,5)) ! top bdy of patch 3
+      field(ids:ide,jds,3) = 0.5 * (field_raw(ids:ide,jds,3) + field_raw(ide:ids:-1,jds,6)) ! bottom bdy of patch 3
       
-      field(ids:ide,jde,4) = 0.5 * (field(ids:ide,jde,4) + field(ids,jde:jds:-1,5)) ! top bdy of patch 4
-      field(ids:ide,jds,4) = 0.5 * (field(ids:ide,jds,4) + field(ids,jds:jde   ,6)) ! bottom bdy of patch 4
+      field(ids:ide,jde,4) = 0.5 * (field_raw(ids:ide,jde,4) + field_raw(ids,jde:jds:-1,5)) ! top bdy of patch 4
+      field(ids:ide,jds,4) = 0.5 * (field_raw(ids:ide,jds,4) + field_raw(ids,jds:jde   ,6)) ! bottom bdy of patch 4
       
       field(ide,jds:jde,1) = field(ids,jds:jde,2) ! right bdy of patch 1
       field(ide,jds:jde,2) = field(ids,jds:jde,3) ! right bdy of patch 2
@@ -303,7 +308,7 @@ MODULE spatial_operators_mod
       field(ids,jds:jde,5) = field(ide:ids:-1,jde,4) ! left bdy of patch 5
       field(ids,jds:jde,6) = field(ids:ide   ,jds,4) ! left bdy of patch 6
       
-      field(ide,jds:jde,5) = field(ids:ide,jde   ,2) ! right bdy of 5
+      field(ide,jds:jde,5) = field(ids:ide   ,jde,2) ! right bdy of 5
       field(ide,jds:jde,6) = field(ide:ids:-1,jds,2) ! right bdy of 6
       
       field(ids:ide,jde,5) = field(ide:ids:-1,jde,3) ! top bdy of patch 5
@@ -312,16 +317,16 @@ MODULE spatial_operators_mod
       field(ids:ide,jde,6) = field(ids:ide   ,jds,1) ! top bdy of patch 6
       field(ids:ide,jds,6) = field(ide:ids:-1,jds,3) ! bottom bdy of patch 6
       
-      ! Bdy points
-      field(ids,jds,1) = (field(ids,jds,1) + field(ide,jds,4) + field(ids,jde,6)) / 3. ! low-left point of patch 1
-      field(ide,jds,1) = (field(ide,jds,1) + field(ids,jds,2) + field(ide,jde,6)) / 3. ! low-right point of patch 1
-      field(ide,jde,1) = (field(ide,jde,1) + field(ids,jde,2) + field(ide,jds,5)) / 3. ! up-right point of patch 1
-      field(ids,jde,1) = (field(ids,jde,1) + field(ide,jde,4) + field(ids,jds,5)) / 3. ! up-left point of patch 1
+      ! Vertex points
+      field(ids,jds,1) = (field_raw(ids,jds,1) + field_raw(ide,jds,4) + field_raw(ids,jde,6)) / 3. ! low-left point of patch 1
+      field(ide,jds,1) = (field_raw(ide,jds,1) + field_raw(ids,jds,2) + field_raw(ide,jde,6)) / 3. ! low-right point of patch 1
+      field(ide,jde,1) = (field_raw(ide,jde,1) + field_raw(ids,jde,2) + field_raw(ide,jds,5)) / 3. ! up-right point of patch 1
+      field(ids,jde,1) = (field_raw(ids,jde,1) + field_raw(ide,jde,4) + field_raw(ids,jds,5)) / 3. ! up-left point of patch 1
       
-      field(ids,jds,3) = (field(ids,jds,3) + field(ide,jds,2) + field(ide,jds,6)) / 3. ! low-left point of patch 3
-      field(ide,jds,3) = (field(ide,jds,3) + field(ids,jds,4) + field(ide,jds,6)) / 3. ! low-right point of patch 3
-      field(ide,jde,3) = (field(ide,jde,3) + field(ids,jde,5) + field(ids,jde,4)) / 3. ! up-right point of patch 3
-      field(ids,jde,3) = (field(ids,jde,3) + field(ide,jde,2) + field(ide,jds,5)) / 3. ! up-left point of patch 3
+      field(ids,jds,3) = (field_raw(ids,jds,3) + field_raw(ide,jds,2) + field_raw(ide,jds,6)) / 3. ! low-left point of patch 3
+      field(ide,jds,3) = (field_raw(ide,jds,3) + field_raw(ids,jds,4) + field_raw(ide,jds,6)) / 3. ! low-right point of patch 3
+      field(ide,jde,3) = (field_raw(ide,jde,3) + field_raw(ids,jde,5) + field_raw(ids,jde,4)) / 3. ! up-right point of patch 3
+      field(ids,jde,3) = (field_raw(ids,jde,3) + field_raw(ide,jde,2) + field_raw(ide,jds,5)) / 3. ! up-left point of patch 3
       
       field(ids,jds,2) = field(ide,jds,1) ! low-left point of patch 2
       field(ide,jds,2) = field(ids,jds,3) ! low-right point of patch 2
