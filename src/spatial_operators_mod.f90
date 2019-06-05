@@ -20,8 +20,8 @@ MODULE spatial_operators_mod
       
       real vorticity(ids:ide,jds:jde,ifs:ife)
       
-      real lambda_x(ils:ile) ! eigenvalue along x direction
-      real lambda_y(jls:jle) ! eigenvalue along y direction
+      real lambda_x(ips:ipe) ! eigenvalue along x direction
+      real lambda_y(jps:jpe) ! eigenvalue along y direction
       
       real ux   (ips:ipe) ! u array along x direction
       real vy   (jps:jpe) ! v array along y direction
@@ -53,9 +53,9 @@ MODULE spatial_operators_mod
           phiGux= phiGu    (:,j,iPatch)
           phiGx = stat%phiG(:,j,iPatch)
           
-          do i = ils, ile
-            P1          = pvIdx(1,i)
-            lambda_x(i) = eigenvalue_x(stat%contraU(P1,j,iPatch),stat%phi(P1,j,iPatch),mesh%matrixIG(:,:,P1,j,iPatch))
+          do i = ips, ipe
+            !P1          = pvIdx(1,i)
+            lambda_x(i) = eigenvalue_x(stat%contraU(i,j,iPatch),stat%phi(i,j,iPatch),mesh%matrixIG(:,:,i,j,iPatch))
           enddo
           
           call calc_tendP(flux_x(:,j,iPatch),Ex    ,ux   ,lambda_x)
@@ -71,9 +71,9 @@ MODULE spatial_operators_mod
           phiGvy = phiGv    (i,:,iPatch)
           phiGy  = stat%phiG(i,:,iPatch)
           
-          do j = jls, jle
-            P1          = pvIdx(1,j)
-            lambda_y(j) = eigenvalue_y(stat%contraV(i,P1,iPatch),stat%phi(i,P1,iPatch),mesh%matrixIG(:,:,i,P1,iPatch))
+          do j = jps, jpe
+            !P1          = pvIdx(1,j)
+            lambda_y(j) = eigenvalue_y(stat%contraV(i,j,iPatch),stat%phi(i,j,iPatch),mesh%matrixIG(:,:,i,j,iPatch))
           enddo
             
           call calc_tendP(flux_y(i,:,iPatch),Ey    ,vy   ,lambda_y)
@@ -107,7 +107,7 @@ MODULE spatial_operators_mod
       real   , intent(out) :: tendP     (ids:ide)
       real   , intent(in ) :: f         (ips:ipe)
       real   , intent(in ) :: q         (ips:ipe)
-      real   , intent(in ) :: eigenvalue(ils:ile)
+      real   , intent(in ) :: eigenvalue(ips:ipe)
       
       real fxL    (ics:ice)
       real fxR    (ics:ice)
@@ -122,6 +122,8 @@ MODULE spatial_operators_mod
       
       real fxVIA       ! The 1st order derivative of f on cell
       real fxxc        ! The 2nd order derivative of f
+      
+      real lambda_max  ! max eigenvalue
       
       integer P1,P2,P3,P4 ! points in cell
       
@@ -142,8 +144,9 @@ MODULE spatial_operators_mod
         qxR(iCell) = qxL_fit(iCell)
         
         P1         = pvIdx(1,iCell)
-        
-        call riemann_solver(tendP(P1),fxL(iCell),fxR(iCell),qxL(iCell),qxR(iCell),eigenvalue(iCell))
+        !lambda_max = maxval(eigenvalue(P1-DOF+1:P1+DOF-1))
+        lambda_max = maxval(eigenvalue)
+        call riemann_solver(tendP(P1),fxL(iCell),fxR(iCell),qxL(iCell),qxR(iCell),lambda_max)
         
         ! tendP(P4) = tendP(P1(iCell+1))
       enddo
@@ -158,22 +161,22 @@ MODULE spatial_operators_mod
         fxVIA = (f(P4) - f(P1)) / dx
         fxxc  = 4.5 * ( f(P1) - f(P2) - f(P3) + f(P4) ) / (dx**2)
         
-        tendP(P2) = 0.75 * fxVIA - (4. * tendP(P1) + 5. * tendP(P4)) / 27. - 4. / 27. * dx * fxxc
-        tendP(P3) = 0.75 * fxVIA - (5. * tendP(P1) + 4. * tendP(P4)) / 27. + 4. / 27. * dx * fxxc
+        tendP(P2) = 4./3. * fxVIA - (4. * tendP(P1) + 5. * tendP(P4)) / 27. - 4. / 27. * dx * fxxc
+        tendP(P3) = 4./3. * fxVIA - (5. * tendP(P1) + 4. * tendP(P4)) / 27. + 4. / 27. * dx * fxxc
       enddo
       
       !tendP = -tendP
       
     end subroutine calc_tendP
     
-    subroutine polyfit_tend(fitTendCL,fitTendCR,pv,dx)
+    subroutine polyfit_tend(fitTendCL,fitTendCR,pv,dh)
       real, intent(in ) :: pv(DOF)
-      real, intent(in ) :: dx
+      real, intent(in ) :: dh
       real, intent(out) :: fitTendCL ! left side tend of the cell
       real, intent(out) :: fitTendCR ! right side tend of the cell
       
-      fitTendCL = (-11. * pv(1) + 18. * pv(2) - 9. * pv(3) + 2. * pv(4))/(2. * dx);
-      fitTendCR = ( 11. * pv(4) - 18. * pv(3) + 9. * pv(2) - 2. * pv(1))/(2. * dx);
+      fitTendCL = (-11. * pv(1) + 18. * pv(2) - 9. * pv(3) + 2. * pv(4))/(2. * dh);
+      fitTendCR = ( 11. * pv(4) - 18. * pv(3) + 9. * pv(2) - 2. * pv(1))/(2. * dh);
     
     end subroutine polyfit_tend
     
@@ -235,13 +238,13 @@ MODULE spatial_operators_mod
       
       do iPatch = ifs, ife
         do j = jds, jde
-          call CD4(dvdx(:,j,iPatch),v(:,j,iPatch),dx,ips,ipe,ids,ide)
+          call CD4(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ips,ipe,ids,ide)
         enddo
       enddo
       
       do iPatch = ifs, ife
         do i = ids, ide
-          call CD4(dudy(i,:,iPatch),u(i,:,iPatch),dy,jps,jpe,jds,jde)
+          call CD4(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jds,jde)
         enddo
       enddo
       
@@ -251,14 +254,14 @@ MODULE spatial_operators_mod
     
     ! 4th-order center difference
     subroutine CD4(dqdh,q,dh,ims,ime,its,ite)
+      integer, intent(in ) :: ims,ime,its,ite
       real   , intent(in ) :: q   (ims:ime)
       real   , intent(in ) :: dh
-      integer, intent(in ) :: ims,ime,its,ite
       real   , intent(out) :: dqdh(its:ite)
       
       integer i
       
-      do i = ids, ide
+      do i = its, ite
         dqdh(i) = (q(i-2) - 8. * q(i-1) + 8. * q(i+1) - q(i+2)) / 12. / dh
       enddo
     
@@ -283,10 +286,10 @@ MODULE spatial_operators_mod
       field_raw = field
       
       ! Bdy lines
-      field(ids,jds:jde,1) = 0.5 * (field_raw(ids,jds:jde,4) + field_raw(ide,jds:jde,1)) ! left bdy of patch 1
-      field(ids,jds:jde,2) = 0.5 * (field_raw(ids,jds:jde,1) + field_raw(ide,jds:jde,2)) ! left bdy of patch 2
-      field(ids,jds:jde,3) = 0.5 * (field_raw(ids,jds:jde,2) + field_raw(ide,jds:jde,3)) ! left bdy of patch 3
-      field(ids,jds:jde,4) = 0.5 * (field_raw(ids,jds:jde,3) + field_raw(ide,jds:jde,4)) ! left bdy of patch 4
+      field(ids,jds:jde,1) = 0.5 * (field_raw(ide,jds:jde,4) + field_raw(ids,jds:jde,1)) ! left bdy of patch 1
+      field(ids,jds:jde,2) = 0.5 * (field_raw(ide,jds:jde,1) + field_raw(ids,jds:jde,2)) ! left bdy of patch 2
+      field(ids,jds:jde,3) = 0.5 * (field_raw(ide,jds:jde,2) + field_raw(ids,jds:jde,3)) ! left bdy of patch 3
+      field(ids,jds:jde,4) = 0.5 * (field_raw(ide,jds:jde,3) + field_raw(ids,jds:jde,4)) ! left bdy of patch 4
       
       field(ids:ide,jde,1) = 0.5 * (field_raw(ids:ide,jds,5) + field_raw(ids:ide,jde,1)) ! top bdy of patch 1
       field(ids:ide,jds,1) = 0.5 * (field_raw(ids:ide,jds,1) + field_raw(ids:ide,jde,6)) ! bottom bdy of patch 1
