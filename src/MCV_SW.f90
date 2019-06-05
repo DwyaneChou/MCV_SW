@@ -45,7 +45,7 @@
       call history_write_stat(stat(old),1)
       call calc_total_mass   (total_mass  ,stat(old))
       call calc_total_energy (total_energy,stat(old))
-      print*,'output index/total and total mass: ',output_idx,'/',total_output_num,' ',total_mass, total_energy
+      print*,'output index/total, total mass, total energy :',output_idx,'/',total_output_num,' ',total_mass, total_energy
       
       do it = 1,nsteps
         call RK4(stat(new),stat(old))
@@ -56,7 +56,7 @@
           call history_write_stat(stat(new),output_idx)
           call calc_total_mass  (total_mass  ,stat(new))
           call calc_total_energy(total_energy,stat(old))
-          print*,'output index/total, total mass, total energy: ',output_idx,'/',total_output_num,' ',total_mass, total_energy
+          print*,'output index/total, total mass, total energy :',output_idx,'/',total_output_num,' ',total_mass, total_energy
         endif
         
         call switch_stat(stat(old), stat(new))

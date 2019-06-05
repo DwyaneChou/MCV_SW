@@ -46,6 +46,7 @@ MODULE spatial_operators_mod
       E     = stat%phi + mesh%phi_s + 0.5 * (stat%contraU * stat%u + stat%contraV * stat%v)
       
       ! calculate tend in x direction
+      !$OMP PARALLEL DO PRIVATE(i,j,Ex,ux,phiGux,PhiGx,lambda_x)
       do iPatch = ifs, ife
         do j = jds, jde
           Ex    = E        (:,j,iPatch)
@@ -62,8 +63,10 @@ MODULE spatial_operators_mod
           call calc_tendP(div_x (:,j,iPatch),phiGux,phiGx,lambda_x)
         enddo
       enddo
+      !$OMP END PARALLEL DO
       
       ! calculate tend in y direction
+      !$OMP PARALLEL DO PRIVATE(i,j,Ey,vy,phiGvy,PhiGy,lambda_y)
       do iPatch = ifs, ife
         do i = ids, ide
           Ey     = E        (i,:,iPatch)
@@ -80,6 +83,7 @@ MODULE spatial_operators_mod
           call calc_tendP(div_y (i,:,iPatch),phiGvy,phiGy,lambda_y)
         enddo
       enddo
+      !$OMP END PARALLEL DO
       
       call calc_vorticity(vorticity,stat%u,stat%v)
       
