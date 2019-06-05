@@ -22,7 +22,7 @@
       integer :: old = 0
       integer :: new = 1
       
-      real    :: total_mass
+      real    :: total_mass,total_energy
       
       integer :: output_idx, total_output_num
       
@@ -43,17 +43,20 @@
       total_output_num = nsteps * dt / history_interval + 1
       call history_init      (stat(old))
       call history_write_stat(stat(old),1)
-      call calc_total_mass   (total_mass,stat(old))
-      print*,'output index/total and total mass: ',output_idx,'/',total_output_num,' ',total_mass
+      call calc_total_mass   (total_mass  ,stat(old))
+      call calc_total_energy (total_energy,stat(old))
+      print*,'output index/total and total mass: ',output_idx,'/',total_output_num,' ',total_mass, total_energy
       
       do it = 1,nsteps
         call RK4(stat(new),stat(old))
         
         if(mod(it*dt,float(history_interval))==0.and.(it*dt>=history_interval))then
           output_idx = output_idx + 1
+          call addFillValue(stat(new))
           call history_write_stat(stat(new),output_idx)
-          call calc_total_mass(total_mass,stat(new))
-          print*,'output index/total and total mass: ',output_idx,'/',total_output_num,' ',total_mass
+          call calc_total_mass  (total_mass  ,stat(new))
+          call calc_total_energy(total_energy,stat(old))
+          print*,'output index/total, total mass, total energy: ',output_idx,'/',total_output_num,' ',total_mass, total_energy
         endif
         
         call switch_stat(stat(old), stat(new))

@@ -8,6 +8,7 @@ MODULE tend_mod
     real, dimension(:,:,:), allocatable :: u
     real, dimension(:,:,:), allocatable :: v
     real, dimension(:,:,:), allocatable :: phi
+    real, dimension(:,:,:), allocatable :: phiG
     
     real, dimension(:,:,:), allocatable :: contraU
     real, dimension(:,:,:), allocatable :: contraV
@@ -26,9 +27,10 @@ MODULE tend_mod
     allocate( tend(-nIntegralSubSteps:1) )
     
     do iT = -nIntegralSubSteps, 1
-      allocate(tend(iT)%u  (ids:ide,jds:jde,Nf))
-      allocate(tend(iT)%v  (ids:ide,jds:jde,Nf))
-      allocate(tend(iT)%phi(ids:ide,jds:jde,Nf))
+      allocate(tend(iT)%u   (ids:ide,jds:jde,Nf))
+      allocate(tend(iT)%v   (ids:ide,jds:jde,Nf))
+      allocate(tend(iT)%phi (ids:ide,jds:jde,Nf))
+      allocate(tend(iT)%phiG(ids:ide,jds:jde,Nf))
       
       allocate(tend(iT)%contraU(ids:ide,jds:jde,Nf))
       allocate(tend(iT)%contraV(ids:ide,jds:jde,Nf))

@@ -145,5 +145,26 @@ module output_mod
           stop "Stopped by netCDF"
       endif  
     endsubroutine handle_err
+    
+    ! add FillValue for output
+    subroutine addFillValue(stat)
+      type(stat_field), intent(inout) :: stat
+      
+      ! low left corner
+      stat%u(ips:ids-1,jps:jds-1,:) = FillValue
+      stat%v(ips:ids-1,jps:jds-1,:) = FillValue
+      
+      ! low right corner
+      stat%u(ide+1:ipe,jps:jds-1,:) = FillValue
+      stat%v(ide+1:ipe,jps:jds-1,:) = FillValue
+      
+      ! up left corner
+      stat%u(ips:ids-1,jde+1:jpe,:) = FillValue
+      stat%v(ips:ids-1,jde+1:jpe,:) = FillValue
+      
+      ! up right corner
+      stat%u(ide+1:ipe,jde+1:jpe,:) = FillValue
+      stat%v(ide+1:ipe,jde+1:jpe,:) = FillValue
+    end subroutine addFillValue
 end module output_mod
     

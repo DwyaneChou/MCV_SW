@@ -1,6 +1,7 @@
   module time_scheme_mod
     use stat_mod
     use tend_mod
+    use mesh_mod
     use parameters_mod
     use spatial_operators_mod
     use ghost_mod
@@ -21,9 +22,14 @@
       integer, parameter :: three = -3
       integer, parameter :: four  = -4
       
-      stat(one)%phi = stat_old%phi
-      stat(one)%u   = stat_old%u
-      stat(one)%v   = stat_old%v
+      stat(one)%phi             = stat_old%phi
+      stat(one)%phiG            = stat_old%phiG
+      stat(one)%u               = stat_old%u
+      stat(one)%v               = stat_old%v
+      stat(one)%contraU         = stat_old%contraU
+      stat(one)%contraV         = stat_old%contraV
+      stat(one)%zonal_wind      = stat_old%zonal_wind
+      stat(one)%meridional_wind = stat_old%meridional_wind
       
       call spatial_operator (stat(one), tend(one))
       call update_stat      (stat(two), stat(one), tend(one), 0.5 * dt)
@@ -51,9 +57,9 @@
       
       call spatial_operator(stat(four), tend(four))
       
-      tend(new)%phi = (tend(one)%phi + 2. * tend(two)%phi + 2. * tend(three)%phi + tend(four)%phi) / 6.
-      tend(new)%u   = (tend(one)%u   + 2. * tend(two)%u   + 2. * tend(three)%u   + tend(four)%u  ) / 6.
-      tend(new)%v   = (tend(one)%v   + 2. * tend(two)%v   + 2. * tend(three)%v   + tend(four)%v  ) / 6.
+      tend(new)%phiG = (tend(one)%phiG + 2. * tend(two)%phiG + 2. * tend(three)%phiG + tend(four)%phiG) / 6.
+      tend(new)%u    = (tend(one)%u    + 2. * tend(two)%u    + 2. * tend(three)%u    + tend(four)%u   ) / 6.
+      tend(new)%v    = (tend(one)%v    + 2. * tend(two)%v    + 2. * tend(three)%v    + tend(four)%v   ) / 6.
       
       call update_stat      (stat_new, stat_old, tend(new), dt)
       call convert_wind_P2SP(stat_new)
@@ -70,9 +76,11 @@
       type(tend_field), intent(in   ) :: tend
       real            , intent(in   ) :: inc_t
       
-      stat_new%phi(ids:ide,jds:jde,ifs:ife) = stat_old%phi(ids:ide,jds:jde,ifs:ife) + inc_t * tend%phi(ids:ide,jds:jde,ifs:ife)
-      stat_new%u  (ids:ide,jds:jde,ifs:ife) = stat_old%u  (ids:ide,jds:jde,ifs:ife) + inc_t * tend%u  (ids:ide,jds:jde,ifs:ife)
-      stat_new%v  (ids:ide,jds:jde,ifs:ife) = stat_old%v  (ids:ide,jds:jde,ifs:ife) + inc_t * tend%v  (ids:ide,jds:jde,ifs:ife)
+      stat_new%phiG(ids:ide,jds:jde,ifs:ife) = stat_old%phiG(ids:ide,jds:jde,ifs:ife) + inc_t * tend%phiG(ids:ide,jds:jde,ifs:ife)
+      stat_new%u   (ids:ide,jds:jde,ifs:ife) = stat_old%u   (ids:ide,jds:jde,ifs:ife) + inc_t * tend%u   (ids:ide,jds:jde,ifs:ife)
+      stat_new%v   (ids:ide,jds:jde,ifs:ife) = stat_old%v   (ids:ide,jds:jde,ifs:ife) + inc_t * tend%v   (ids:ide,jds:jde,ifs:ife)
+      
+      stat_new%phi = stat_new%phiG / mesh%sqrtG
       
     end subroutine update_stat
     
@@ -80,9 +88,10 @@
       type(stat_field), intent(inout) :: stat_old
       type(stat_field), intent(in   ) :: stat_new
       
-      stat_old%phi = stat_new%phi
-      stat_old%u   = stat_new%u  
-      stat_old%v   = stat_new%v
+      stat_old%phiG = stat_new%phiG
+      stat_old%phi  = stat_new%phi
+      stat_old%u    = stat_new%u  
+      stat_old%v    = stat_new%v
     end subroutine switch_stat
     
   end module time_scheme_mod

@@ -192,15 +192,6 @@ MODULE ghost_mod
   
   end subroutine CubedSphereFillGhost
   
-  ! Fill up halo with ghost points  
-  subroutine fill_ghost(stat)
-    type(stat_field), intent(inout) :: stat
-
-    call CubedSphereFillGhost(stat%zonal_wind     )
-    call CubedSphereFillGhost(stat%meridional_wind)
-    call CubedSphereFillGhost(stat%phi            )
-  end subroutine fill_ghost
-  
   subroutine linear_interp(dest,src,iref,coefL,coefR)
     real   , intent(out) :: dest (ids:ide)
     real   , intent(in ) :: src  (ids:ide)
@@ -211,5 +202,15 @@ MODULE ghost_mod
     dest = coefL * src(iref-1) + coefR * src(iref)
     
   end subroutine linear_interp
+  
+  ! Fill up halo with ghost points  
+  subroutine fill_ghost(stat)
+    type(stat_field), intent(inout) :: stat
+    
+    call CubedSphereFillGhost(stat%zonal_wind     )
+    call CubedSphereFillGhost(stat%meridional_wind)
+    call CubedSphereFillGhost(stat%phi            )
+    
+  end subroutine fill_ghost
   
 END MODULE ghost_mod

@@ -19,15 +19,7 @@ MODULE mesh_mod
     real, dimension(:,:,:,:,:), allocatable :: matrixG  ! horizontal metric Tensor, which transform covariant vectors to contravariant vectors
     real, dimension(:,:,:,:,:), allocatable :: matrixIG ! horizontal metric Tensor, which transform contravariant vectors to covariant vectors
     real, dimension(:,:,:,:,:), allocatable :: matrixA  ! horizontal metric Tensor, which transform 
-    real, dimension(:,:,:,:,:), allocatable :: matrixIA ! horizontal metric Tensor, which transform 
-    real, dimension(:,:,:    ), allocatable :: dsqrtGdx ! \partial \sqrt(G) / \partial x
-    real, dimension(:,:,:    ), allocatable :: dsqrtGdy ! \partial \sqrt(G) / \partial y
-    real, dimension(:,:,:    ), allocatable :: dG11dx   ! \partial \G11     / \partial x
-    real, dimension(:,:,:    ), allocatable :: dG11dy   ! \partial \G11     / \partial y
-    real, dimension(:,:,:    ), allocatable :: dG12dx   ! \partial \G12     / \partial x
-    real, dimension(:,:,:    ), allocatable :: dG12dy   ! \partial \G12     / \partial y
-    real, dimension(:,:,:    ), allocatable :: dG22dx   ! \partial \G22     / \partial x
-    real, dimension(:,:,:    ), allocatable :: dG22dy   ! \partial \G22     / \partial y
+    real, dimension(:,:,:,:,:), allocatable :: matrixIA ! horizontal metric Tensor, which transform
     
     real, dimension(:,:,:    ), allocatable :: f       ! Coriolis parameter
     
@@ -45,8 +37,7 @@ MODULE mesh_mod
     real, dimension(:,:,:    ), allocatable :: secy    ! trigonometric function
     real, dimension(:,:,:    ), allocatable :: cscy    ! trigonometric function
     
-    real, dimension(:,:,:    ), allocatable :: dphisdx ! d \phi _s / dx
-    real, dimension(:,:,:    ), allocatable :: dphisdy ! d \phi _s / dy
+    real, dimension(:,:,:    ), allocatable :: phi_s   ! surface geopotential height
     
     real, dimension(:,:      ), allocatable :: areaCell
     real                                    :: weightsOnPV(DOF,DOF)
@@ -86,15 +77,6 @@ MODULE mesh_mod
     allocate( mesh%matrixA  (2, 2, ips:ipe, jps:jpe, ifs:ife) )
     allocate( mesh%matrixIA (2, 2, ips:ipe, jps:jpe, ifs:ife) )
     
-    allocate( mesh%dsqrtGdx (      ips:ipe, jps:jpe, ifs:ife) )
-    allocate( mesh%dsqrtGdy (      ips:ipe, jps:jpe, ifs:ife) )
-    allocate( mesh%dG11dx   (      ips:ipe, jps:jpe, ifs:ife) )
-    allocate( mesh%dG11dy   (      ips:ipe, jps:jpe, ifs:ife) )
-    allocate( mesh%dG12dx   (      ips:ipe, jps:jpe, ifs:ife) )
-    allocate( mesh%dG12dy   (      ips:ipe, jps:jpe, ifs:ife) )
-    allocate( mesh%dG22dx   (      ips:ipe, jps:jpe, ifs:ife) )
-    allocate( mesh%dG22dy   (      ips:ipe, jps:jpe, ifs:ife) )
-    
     allocate( mesh%f        (      ips:ipe, jps:jpe, ifs:ife) )
     
     allocate( mesh%sinx     (      ips:ipe, jps:jpe, ifs:ife) )
@@ -110,8 +92,7 @@ MODULE mesh_mod
     allocate( mesh%secy     (      ips:ipe, jps:jpe, ifs:ife) )
     allocate( mesh%cscy     (      ips:ipe, jps:jpe, ifs:ife) )
     
-    allocate( mesh%dphisdx  (      ips:ipe, jps:jpe, ifs:ife) )
-    allocate( mesh%dphisdy  (      ips:ipe, jps:jpe, ifs:ife) )
+    allocate( mesh%phi_s    (      ips:ipe, jps:jpe, ifs:ife) )
     
     allocate( mesh%areaCell (Nx, Ny) )
     
@@ -182,27 +163,10 @@ MODULE mesh_mod
           secy = mesh%secy(iPV, jPV, iPatch)
           cscy = mesh%cscy(iPV, jPV, iPatch)
           
-          mesh%dsqrtGdx(iPV, jPV, iPatch) = radius**2 * secy**2 * tanx * (-3*secx**4 + 2*secx**2 * (secy**2 + tanx**2)) / (secy**2 + tanx**2)**(5/2)
-          mesh%dsqrtGdy(iPV, jPV, iPatch) = radius**2 * secx**2 * tany * (   secy**4 - 2*secy**2 *  tanx**2           ) / (secy**2 + tanx**2)**(5/2)
-          mesh%dG11dx  (iPV, jPV, iPatch) = 2. * sinx * cosx * tany**2 / radius**2
-          mesh%dG12dx  (iPV, jPV, iPatch) = siny * (cosx**2 * secy + 0.5 * (3. + 2. * cosx**2 - 1.) * cosy * tanx**2 - sinx**2 * siny * tany) / radius**2
-          mesh%dG22dx  (iPV, jPV, iPatch) = 2. * cosy**2 * secx**2 * tanx / radius**2
-          mesh%dG11dy  (iPV, jPV, iPatch) = 2. * cosx**2 * secy**2 * tany / radius**2
-          mesh%dG12dy  (iPV, jPV, iPatch) = sinx * (cosx * secy**2 + (2. * cosx**2 - 1.) * sinx * tanx) / radius**2
-          mesh%dG22dy  (iPV, jPV, iPatch) = 2. * siny * cosy * tanx**2 / radius**2
-          
           mesh%f(iPV, jPV, iPatch) = 2. * Omega * sin(mesh%latP(iPV,jPV,iPatch))
         end do
       end do
     end do
-    
-    print*,''
-    print*,'max value of dG11dx  : ',maxval(abs(mesh%dG11dx))
-    print*,'max value of dG11dy  : ',maxval(abs(mesh%dG11dy))
-    print*,'max value of dG12dx  : ',maxval(abs(mesh%dG12dx))
-    print*,'max value of dG12dy  : ',maxval(abs(mesh%dG12dy))
-    print*,'max value of dG22dx  : ',maxval(abs(mesh%dG22dx))
-    print*,'max value of dG22dy  : ',maxval(abs(mesh%dG22dy))
     
     ! Calculate mesh infomation on VIA
     do iPatch = ifs, ife

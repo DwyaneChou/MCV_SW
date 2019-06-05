@@ -5,9 +5,10 @@ MODULE stat_mod
   
   ! MCV basic definiton
   type stat_field
-    real, dimension(:,:,:), allocatable :: u   ! covariant wind on x direction on points
-    real, dimension(:,:,:), allocatable :: v   ! covariant wind on y direction on points
-    real, dimension(:,:,:), allocatable :: phi ! geopotential height on points
+    real, dimension(:,:,:), allocatable :: u    ! covariant wind on x direction on points
+    real, dimension(:,:,:), allocatable :: v    ! covariant wind on y direction on points
+    real, dimension(:,:,:), allocatable :: phi  ! geopotential height on points
+    real, dimension(:,:,:), allocatable :: phiG ! phi * sqrtG on points
     
     real, dimension(:,:,:), allocatable :: contraU
     real, dimension(:,:,:), allocatable :: contraV
@@ -26,9 +27,10 @@ MODULE stat_mod
     allocate( stat(-nIntegralSubSteps:1) )
     
     do iT = -nIntegralSubSteps, 1
-      allocate(stat(iT)%u  (ips:ipe,jps:jpe,ifs:ife))
-      allocate(stat(iT)%v  (ips:ipe,jps:jpe,ifs:ife))
-      allocate(stat(iT)%phi(ips:ipe,jps:jpe,ifs:ife))
+      allocate(stat(iT)%u   (ips:ipe,jps:jpe,ifs:ife))
+      allocate(stat(iT)%v   (ips:ipe,jps:jpe,ifs:ife))
+      allocate(stat(iT)%phi (ips:ipe,jps:jpe,ifs:ife))
+      allocate(stat(iT)%phiG(ips:ipe,jps:jpe,ifs:ife))
       
       allocate(stat(iT)%contraU(ips:ipe,jps:jpe,ifs:ife))
       allocate(stat(iT)%contraV(ips:ipe,jps:jpe,ifs:ife))

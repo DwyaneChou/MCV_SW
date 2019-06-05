@@ -42,11 +42,12 @@ module test_case_mod
         enddo
       enddo
     enddo
+    
+    stat%phiG = stat%phi * mesh%sqrtG
       
     call convert_wind_cov2contrav(stat)
     
-    mesh%dphisdx = 0.
-    mesh%dphisdy = 0.
+    mesh%phi_s = 0.
   end subroutine case2
   
   ! Rossby-Haurwitz wave with wavenumber 4
