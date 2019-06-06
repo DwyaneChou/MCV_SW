@@ -13,7 +13,8 @@ MODULE ghost_mod
   type ghostLocation
     real   , dimension(:,:), allocatable :: X     ! X coordinate of ghost points
     real   , dimension(:,:), allocatable :: Y     ! Y coordinate of ghost points, not needed in interpolation
-    real   , dimension(:,:), allocatable :: coef  ! Position in cell
+    real   , dimension(:,:), allocatable :: coefL ! Left coefficient of linear interpolation
+    real   , dimension(:,:), allocatable :: coefR ! Right coefficient of linear interpolation
     integer, dimension(:,:), allocatable :: iref  ! Index of reference point
   end type ghostLocation
   
@@ -26,17 +27,19 @@ MODULE ghost_mod
     integer :: gpatch ! ghost patch
     integer :: ihalo  ! halo index
     real    :: lambda, theta
-    real    :: coef
+    real    :: coefL
+    real    :: coefR
     integer :: iref
     
-    real    :: X_RAW(Nx+1)
+    real    :: X_RAW(ids:ide)
     
     nPVHalo = xhalo * (DOF - 1)
     
-    allocate(ghost%X   (ids:ide,nPVHalo))
-    allocate(ghost%Y   (ids:ide,nPVHalo))
-    allocate(ghost%coef(ids:ide,nPVHalo))
-    allocate(ghost%iref(ids:ide,nPVHalo))
+    allocate(ghost%X    (ids:ide,nPVHalo))
+    allocate(ghost%Y    (ids:ide,nPVHalo))
+    allocate(ghost%coefL(ids:ide,nPVHalo))
+    allocate(ghost%coefR(ids:ide,nPVHalo))
+    allocate(ghost%iref (ids:ide,nPVHalo))
     
     ! Calculate ghost points location
     iPatch = 1
@@ -49,7 +52,7 @@ MODULE ghost_mod
       enddo
     enddo
     
-    X_RAW = mesh%xP(pvIdx(1,1:Nx+1),1,iPatch)
+    X_RAW = mesh%xP(ids:ide,1,iPatch)
     
     ! Calculate reference points
     ! Now apply linear interpolation to obtain edge components
@@ -68,12 +71,19 @@ MODULE ghost_mod
     
         IF ((ghost%X(i,j) >= X_RAW(iref-1)) .AND. (ghost%X(i,j) <= X_RAW(iref  )))THEN
             
-          coef = ghost%X(i,j) - X_RAW(iref-1)
+          coefR = (ghost%X(i,j) - X_RAW(iref-1)) / (X_RAW(iref) - X_RAW(iref-1))
+          coefL = 1. - coefR
           
-          ghost%coef(i,j) = coef
+          ghost%coefL(i,j) = coefL
+          ghost%coefR(i,j) = coefR
           
           !print*,i,iref,ghost%coefL(i,j),ghost%coefR(i,j)
           
+          IF ((coefR < 0.0) .OR. (coefR > 1.)) THEN
+            WRITE (*,*) 'FAIL in CubedSphereFillHalo_Linear'
+            WRITE (*,*) 'a out of bounds'
+            STOP
+          ENDIF
         ENDIF
       ENDDO
     ENDDO
@@ -182,13 +192,14 @@ MODULE ghost_mod
   
   end subroutine CubedSphereFillGhost
   
-  subroutine linear_interp(dest,src,iref,coef)
-    real   , intent(out) :: dest(ids:ide)
-    real   , intent(in ) :: src (ids:ide)
-    integer, intent(in ) :: iref(ids:ide)
-    real   , intent(in ) :: coef(ids:ide)
+  subroutine linear_interp(dest,src,iref,coefL,coefR)
+    real   , intent(out) :: dest (ids:ide)
+    real   , intent(in ) :: src  (ids:ide)
+    integer, intent(in ) :: iref (ids:ide)
+    real   , intent(in ) :: coefL(ids:ide)
+    real   , intent(in ) :: coefR(ids:ide)
     
-    dest = (2*dx**3*q1 + dx^2 (-11 q1 + 18 q2 - 9 q3 + 2 q4) x + 9 dx (2 q1 - 5 q2 + 4 q3 - q4) x^2 + 9 (-q1 + 3 q2 - 3 q3 + q4) x^3) / (dx**3)
+    dest = coefL * src(iref-1) + coefR * src(iref)
     
   end subroutine linear_interp
   
