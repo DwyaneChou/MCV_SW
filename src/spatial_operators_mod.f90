@@ -78,7 +78,7 @@ MODULE spatial_operators_mod
             !P1          = pvIdx(1,j)
             lambda_y(j) = eigenvalue_y(stat%contraV(i,j,iPatch),stat%phi(i,j,iPatch),mesh%matrixIG(:,:,i,j,iPatch))
           enddo
-            
+          
           call calc_tendP(flux_y(i,:,iPatch),Ey    ,vy   ,lambda_y)
           call calc_tendP(div_y (i,:,iPatch),phiGvy,phiGy,lambda_y)
         enddo
@@ -148,8 +148,9 @@ MODULE spatial_operators_mod
         qxR(iCell) = qxL_fit(iCell)
         
         P1         = pvIdx(1,iCell)
+        lambda_max = eigenvalue(P1)
         !lambda_max = maxval(eigenvalue(P1-DOF+1:P1+DOF-1))
-        lambda_max = maxval(eigenvalue)
+        !lambda_max = maxval(eigenvalue)
         call riemann_solver(tendP(P1),fxL(iCell),fxR(iCell),qxL(iCell),qxR(iCell),lambda_max)
         
         ! tendP(P4) = tendP(P1(iCell+1))

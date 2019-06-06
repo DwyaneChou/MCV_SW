@@ -24,15 +24,14 @@ MODULE diag_mod
                 iPV = pvIdx(iDOF,iCell)
                 jPV = pvIdx(jDOF,jCell)
                 
-                massOnCell(iCell,jCell,iPatch) = massOnCell(iCell,jCell,iPatch) + mesh%weightsOnPV(iDOF,jDOF) * stat%phi(iPV,jPV,iPatch)
+                massOnCell(iCell,jCell,iPatch) = massOnCell(iCell,jCell,iPatch) + mesh%weightsOnPV(iDOF,jDOF) * stat%phiG(iPV,jPV,iPatch)
               enddo
             enddo
           enddo
         enddo
-        massOnCell(:,:,iPatch) = massOnCell(:,:,iPatch) * mesh%areaCell
       enddo
       
-      total_mass = sum(massOnCell)/(4.*pi*radius**2)
+      total_mass = sum(massOnCell)
     
     end subroutine calc_total_mass
     
@@ -60,10 +59,9 @@ MODULE diag_mod
             enddo
           enddo
         enddo
-        energyOnCell(:,:,iPatch) = energyOnCell(:,:,iPatch) * mesh%areaCell
       enddo
       
-      total_energy = sum(energyOnCell)/(4.*pi*radius**2)
+      total_energy = sum(energyOnCell)
     end subroutine calc_total_energy
 END MODULE diag_mod
 
