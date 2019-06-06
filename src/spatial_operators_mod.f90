@@ -193,7 +193,7 @@ MODULE spatial_operators_mod
       real, intent(in ) :: eigenvalue
       real, intent(out) :: tendP
       
-      tendP = 0.5 * (fxL + fxR) - eigenvalue * (qxR - qxL)
+      tendP = 0.5 * ((fxL + fxR) - eigenvalue * (qxR - qxL))
     
     end subroutine riemann_solver
     

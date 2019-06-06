@@ -64,7 +64,7 @@ MODULE ghost_mod
         !
         ! Find reference points
         !
-        DO WHILE ((iref .NE. ide) .AND. (ghost%X(i,j) > X_RAW(iref)))
+        DO WHILE (ghost%X(i,j) > X_RAW(iref))
           iref = iref + 1
         ENDDO
         ghost%iref(i,j) = iref

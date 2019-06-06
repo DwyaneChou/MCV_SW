@@ -1,10 +1,10 @@
 &time_settings
-run_days         = 5
+run_days         = 365
 run_hours        = 0
 run_minutes      = 0
 run_seconds      = 0
-dt               = 120
-history_interval = 3600
+dt               = 180
+history_interval = 86400
 frames_per_file  = '1000 months',
 integral_scheme  = 'RK4'
 /

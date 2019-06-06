@@ -38,14 +38,13 @@ module test_case_mod
           
           stat%zonal_wind(i,j,iPatch) = u0 * cos(mesh%latP(i,j,iPatch))
           
-          call covProjSphere2Plane(stat%u(i,j,iPatch), stat%v(i,j,iPatch), stat%zonal_wind(i,j,iPatch), stat%meridional_wind(i,j,iPatch), mesh%matrixIA(:,:,i,j,iPatch), mesh%matrixG(:,:,i,j,iPatch))
+          call covProjSphere2Plane    (stat%u      (i,j,iPatch), stat%v      (i,j,iPatch), stat%zonal_wind(i,j,iPatch), stat%meridional_wind(i,j,iPatch), mesh%matrixIA(:,:,i,j,iPatch), mesh%matrixG(:,:,i,j,iPatch))
+          call contravProjSphere2Plane(stat%contraU(i,j,iPatch), stat%contraV(i,j,iPatch), stat%zonal_wind(i,j,iPatch), stat%meridional_wind(i,j,iPatch), mesh%matrixIA(:,:,i,j,iPatch))
         enddo
       enddo
     enddo
     
     stat%phiG = stat%phi * mesh%sqrtG
-      
-    call convert_wind_cov2contrav(stat)
     
     mesh%phi_s = 0.
   end subroutine case2

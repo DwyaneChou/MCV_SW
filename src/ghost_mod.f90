@@ -55,24 +55,22 @@ MODULE ghost_mod
     ! Now apply linear interpolation to obtain edge components
     DO j = 1, nPVHalo
       ! Reset the reference index
-      iref = ids
+      iref = 1
       
       DO i = ids, ide
         !
         ! Find reference points
         !
-        DO WHILE ((iref .NE. ide) .AND. (ghost%X(i,j) > X_RAW(iref)))
+        DO WHILE (ghost%X(i,j) > X_RAW(iref))
           iref = iref + 1
         ENDDO
-        ghost%iref(i,j) = iref
-    
+        
         IF ((ghost%X(i,j) >= X_RAW(iref-1)) .AND. (ghost%X(i,j) <= X_RAW(iref  )))THEN
             
           coef = ghost%X(i,j) - X_RAW(iref-1)
           
           ghost%coef(i,j) = coef
-          
-          !print*,i,iref,ghost%coefL(i,j),ghost%coefR(i,j)
+          ghost%iref(i,j) = iref - 1
           
         ENDIF
       ENDDO
@@ -168,13 +166,13 @@ MODULE ghost_mod
     do iPatch = ifs, ife
       do j = 1, nPVHalo
         ! Left boundary
-        call linear_interp(ghost_target(ids-j,jds:jde,iPatch),field(ids-j,jds:jde,iPatch),ghost%iref(:,j),ghost%coefL(:,j),ghost%coefR(:,j))
+        call linear_interp(ghost_target(ids-j,jds:jde,iPatch),field(ids-j,jds:jde,iPatch),ghost%iref(:,j),ghost%coef(:,j))
         ! Rigth boundary
-        call linear_interp(ghost_target(ide+j,jds:jde,iPatch),field(ide+j,jds:jde,iPatch),ghost%iref(:,j),ghost%coefL(:,j),ghost%coefR(:,j))
+        call linear_interp(ghost_target(ide+j,jds:jde,iPatch),field(ide+j,jds:jde,iPatch),ghost%iref(:,j),ghost%coef(:,j))
         ! Top boundary
-        call linear_interp(ghost_target(ids:ide,jde+j,iPatch),field(ids:ide,jde+j,iPatch),ghost%iref(:,j),ghost%coefL(:,j),ghost%coefR(:,j))
+        call linear_interp(ghost_target(ids:ide,jde+j,iPatch),field(ids:ide,jde+j,iPatch),ghost%iref(:,j),ghost%coef(:,j))
         ! Bottom boundary
-        call linear_interp(ghost_target(ids:ide,jds-j,iPatch),field(ids:ide,jds-j,iPatch),ghost%iref(:,j),ghost%coefL(:,j),ghost%coefR(:,j))
+        call linear_interp(ghost_target(ids:ide,jds-j,iPatch),field(ids:ide,jds-j,iPatch),ghost%iref(:,j),ghost%coef(:,j))
       enddo
     enddo
     
@@ -188,8 +186,24 @@ MODULE ghost_mod
     integer, intent(in ) :: iref(ids:ide)
     real   , intent(in ) :: coef(ids:ide)
     
-    dest = (2*dx**3*q1 + dx^2 (-11 q1 + 18 q2 - 9 q3 + 2 q4) x + 9 dx (2 q1 - 5 q2 + 4 q3 - q4) x^2 + 9 (-q1 + 3 q2 - 3 q3 + q4) x^3) / (dx**3)
+    integer i
+    integer P1,P2,P3,P4
+    real    q1,q2,q3,q4
     
+    do i = ids,ide
+      P1 = pvIdx(1,iref(i))
+      P2 = pvIdx(2,iref(i))
+      P3 = pvIdx(3,iref(i))
+      P4 = pvIdx(4,iref(i))
+      
+      q1 = src(P1)
+      q2 = src(P2)
+      q3 = src(P3)
+      q4 = src(P4)
+      
+      dest(i) = (2.*dx**3.*q1 + dx**2.*(-11.*q1 + 18.*q2 - 9.*q3 + 2.*q4) * coef(i) + 9.*dx*(2.*q1 - 5.*q2 + 4.*q3 - q4)*coef(i)**2. + 9.*(-q1 + 3.*q2 - 3.*q3 + q4)*coef(i)**3.) / (2.*dx**3.)
+    
+    enddo
   end subroutine linear_interp
   
   ! Fill up halo with ghost points  
