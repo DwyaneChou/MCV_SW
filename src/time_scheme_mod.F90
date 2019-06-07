@@ -33,27 +33,12 @@
       
       call spatial_operator (stat(one), tend(one))
       call update_stat      (stat(two), stat(one), tend(one), 0.5 * dt)
-      call convert_wind_P2SP(stat(two))
-      call fill_ghost       (stat(two))
-      call unify_bdy_stat   (stat(two))
-      call convert_wind_SP2P(stat(two))
-      call convert_wind_cov2contrav(stat(two))
       
       call spatial_operator (stat(two), tend(two))
       call update_stat      (stat(three), stat(one), tend(two), 0.5 * dt)
-      call convert_wind_P2SP(stat(three))
-      call fill_ghost       (stat(three))
-      call unify_bdy_stat   (stat(three))
-      call convert_wind_SP2P(stat(three))
-      call convert_wind_cov2contrav(stat(three))
       
       call spatial_operator (stat(three), tend(three))
       call update_stat      (stat(four), stat(one), tend(three), dt)
-      call convert_wind_P2SP(stat(four))
-      call fill_ghost       (stat(four))
-      call unify_bdy_stat   (stat(four))
-      call convert_wind_SP2P(stat(four))
-      call convert_wind_cov2contrav(stat(four))
       
       call spatial_operator(stat(four), tend(four))
       
@@ -62,11 +47,6 @@
       tend(new)%v    = (tend(one)%v    + 2. * tend(two)%v    + 2. * tend(three)%v    + tend(four)%v   ) / 6.
       
       call update_stat      (stat_new, stat_old, tend(new), dt)
-      call convert_wind_P2SP(stat_new)
-      call fill_ghost       (stat_new)
-      call unify_bdy_stat   (stat_new)
-      call convert_wind_SP2P(stat_new)
-      call convert_wind_cov2contrav(stat_new)
 
     end subroutine RK4
     
@@ -81,6 +61,15 @@
       stat_new%v   (ids:ide,jds:jde,ifs:ife) = stat_old%v   (ids:ide,jds:jde,ifs:ife) + inc_t * tend%v   (ids:ide,jds:jde,ifs:ife)
       
       stat_new%phi = stat_new%phiG / mesh%sqrtG
+      
+      ! Fill ghost band and unify values of common points
+      call convert_wind_P2SP       (stat_new)
+      call fill_ghost              (stat_new)
+      call unify_bdy_stat          (stat_new)
+      call convert_wind_SP2P       (stat_new)
+      call convert_wind_cov2contrav(stat_new)
+      
+      stat_new%phiG = stat_new%phi * mesh%sqrtG
       
     end subroutine update_stat
     

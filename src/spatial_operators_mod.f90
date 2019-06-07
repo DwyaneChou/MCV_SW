@@ -279,8 +279,6 @@ MODULE spatial_operators_mod
       call unify_bdy_field(stat%zonal_wind     (ids:ide,jds:jde,:))
       call unify_bdy_field(stat%meridional_wind(ids:ide,jds:jde,:))
       
-      stat%phiG = stat%phi * mesh%sqrtG
-      
     end subroutine unify_bdy_stat
     
     subroutine unify_bdy_field(field)

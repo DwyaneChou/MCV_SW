@@ -40,8 +40,8 @@
       call initTestCase
       
       ! time integration
-      output_idx       = 1
-      total_output_num = nsteps * dt / history_interval + 1
+      output_idx       = 0
+      total_output_num = nsteps * dt / history_interval
       call history_init      (stat(old))
       call history_write_stat(stat(old),1)
       call calc_total_mass   (total_mass0  ,stat(old))
