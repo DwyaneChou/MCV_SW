@@ -40,7 +40,7 @@
       call initGhost
       call initTestCase
       
-      print*,'The MCV order is               ', DOF
+      print*,'The MCV order is ', DOF
       print*,''
       print*,'Temporal integration scheme is '//trim(adjustl(integral_scheme))
       print*,''

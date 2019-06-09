@@ -126,20 +126,6 @@ module test_case_mod
     enddo
     
     mesh%phi_s = 0.
-    
-    !u  (0  ,:) = u (nx,:)
-    !v  (0  ,:) = v (nx,:)
-    !phi(0  ,:) = phi(nx,:)
-    !u  (nx1,:) = u (1 ,:)
-    !v  (nx1,:) = v (1 ,:)
-    !phi(nx1,:) = phi(1 ,:)
-    !
-    !u  (:,0  ) = 0
-    !u  (:,ny1) = 0
-    !v  (:,0  ) = 0
-    !v  (:,ny1) = 0
-    !phi(:,0  ) = 0
-    !phi(:,ny1) = 0
   end subroutine case6
   
 end module test_case_mod
