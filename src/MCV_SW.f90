@@ -32,12 +32,18 @@
       !Timing start
       call SYSTEM_CLOCK(timeStart)
       
+      print*,'Start the MCV Shallow Water model'
       call initParameters
       call initMesh
       call initStat
       call initTend
       call initGhost
       call initTestCase
+      
+      print*,'The MCV order is               ', DOF
+      print*,''
+      print*,'Temporal integration scheme is '//trim(adjustl(integral_scheme))
+      print*,''
       
       ! time integration
       output_idx       = 0
@@ -49,7 +55,8 @@
       print*,'output index/total, MCR, ECR :',output_idx,'/',total_output_num,' ',0., 0.
       
       do it = 1,nsteps
-        call RK4(stat(new),stat(old))
+        if(trim(adjustl(integral_scheme))=='RK3_TVD')call RK3_TVD(stat(new),stat(old))
+        if(trim(adjustl(integral_scheme))=='RK4'    )call RK4    (stat(new),stat(old))
         
         if(mod(it*dt,float(history_interval))==0.and.(it*dt>=history_interval))then
           output_idx = output_idx + 1

@@ -186,15 +186,25 @@ MODULE mesh_mod
       end do
     end do
     
-    ! Calculate weights of points in a cell For 4th-order MCV only
-    mesh%weightsOnPV(1,1) = 1.
-    mesh%weightsOnPV(1,2) = 3.
-    mesh%weightsOnPV(1,3) = 3.
-    mesh%weightsOnPV(1,4) = 1.
-    mesh%weightsOnPV(2,:) = 3. * mesh%weightsOnPV(1,:)
-    mesh%weightsOnPV(3,:) = 3. * mesh%weightsOnPV(1,:)
-    mesh%weightsOnPV(4,:) = mesh%weightsOnPV(1,:)
-    mesh%weightsOnPV      = mesh%weightsOnPV / 80.
+    if(DOF==3)then
+      ! Calculate weights of points in a cell For MCV3 only
+      mesh%weightsOnPV(1,1) = 1.
+      mesh%weightsOnPV(1,2) = 4.
+      mesh%weightsOnPV(1,3) = 1.
+      mesh%weightsOnPV(2,:) = 4. * mesh%weightsOnPV(1,:)
+      mesh%weightsOnPV(3,:) = 1. * mesh%weightsOnPV(1,:)
+      mesh%weightsOnPV      = mesh%weightsOnPV / 36.
+    elseif(DOF==4)then
+      ! Calculate weights of points in a cell For MCV4 only
+      mesh%weightsOnPV(1,1) = 1.
+      mesh%weightsOnPV(1,2) = 3.
+      mesh%weightsOnPV(1,3) = 3.
+      mesh%weightsOnPV(1,4) = 1.
+      mesh%weightsOnPV(2,:) = 3. * mesh%weightsOnPV(1,:)
+      mesh%weightsOnPV(3,:) = 3. * mesh%weightsOnPV(1,:)
+      mesh%weightsOnPV(4,:) = mesh%weightsOnPV(1,:)
+      mesh%weightsOnPV      = mesh%weightsOnPV / 80.
+    endif
     
     ! Calculate areaCell
     call EquiangularAllAreas(Nx, mesh%areaCell)
@@ -260,8 +270,8 @@ MODULE mesh_mod
       ENDDO
     ENDDO
     
-    print*,''
-    print*,'total area error     : ', dbg - 4. * pi / 6. !DBG
+    !print*,''
+    !print*,'total area error     : ', dbg - 4. * pi / 6. !DBG
   END SUBROUTINE EquiangularAllAreas
 END MODULE mesh_mod
 

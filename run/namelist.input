@@ -3,19 +3,18 @@ run_days         = 33
 run_hours        = 0
 run_minutes      = 0
 run_seconds      = 0
-dt               = 40
+dt               = 120
 history_interval = 3600
-frames_per_file  = '1000 months',
-integral_scheme  = 'RK4'
+integral_scheme  = 'RK3_TVD' ! Choose from 'RK3_TVD' or 'RK4'
 /
 
 &case_select
-case_num    = 6,
+case_num    = 6, ! Choose from 2 or 6
 /
 
 &domain
-dx          = 1,  ! Unit: degree 
-dy          = 1,  ! Unit: degree
+dx          = 3,  ! Unit: degree 
+dy          = 3,  ! Unit: degree
 xhalo       = 1,  ! The ghost cell size
 yhalo       = 1,  ! The ghost cell size
 /

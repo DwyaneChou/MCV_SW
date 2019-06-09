@@ -10,7 +10,6 @@ module parameters_mod
   integer       :: run_seconds
   real          :: dt               ! time step
   integer       :: history_interval ! output interval in seconds
-  character(512):: frames_per_file
   
   character*200 :: integral_scheme
   
@@ -83,7 +82,6 @@ module parameters_mod
                            run_minutes      ,&
                            run_seconds      ,&
                            history_interval ,&
-                           frames_per_file  ,&
                            integral_scheme
   
   namelist /case_select/   case_num
@@ -119,7 +117,6 @@ module parameters_mod
     run_minutes      = 0
     run_seconds      = 0
     history_interval = 360
-    frames_per_file  = '1000 months'
     integral_scheme  = 'RK4'
     
     ! Read namelist
@@ -194,10 +191,12 @@ module parameters_mod
     y_max = y_max * D2R
     
     ! Setting the number of substeps in temporal integration scheme
-    if(trim(adjustl(integral_scheme)) == 'RK4')then
+    if(trim(adjustl(integral_scheme)) == 'RK3_TVD')then
+      nIntegralSubSteps = 3
+    elseif(trim(adjustl(integral_scheme)) == 'RK4')then
       nIntegralSubSteps = 4
     else
-      stop 'Unknown integral scheme, please select from RK4 ...'
+      stop 'Unknown integral scheme, please select from RK3_TVD or RK4 ...'
     endif
     
     nsteps = (run_days * 86400 + run_hours * 3600 + run_minutes * 60 + run_seconds) / dt

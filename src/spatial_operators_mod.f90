@@ -156,19 +156,32 @@ MODULE spatial_operators_mod
         ! tendP(P4) = tendP(P1(iCell+1))
       enddo
       
-      ! For 4th order MCV
-      do iCell = 1, Nx
-        P1    = pvIdx(1,iCell)
-        P2    = pvIdx(2,iCell)
-        P3    = pvIdx(3,iCell)
-        P4    = pvIdx(4,iCell)
-        
-        fxVIA = (f(P4) - f(P1)) / dx
-        fxxc  = 4.5 * ( f(P1) - f(P2) - f(P3) + f(P4) ) / (dx**2)
-        
-        tendP(P2) = 4./3. * fxVIA - (4. * tendP(P1) + 5. * tendP(P4)) / 27. - 4. / 27. * dx * fxxc
-        tendP(P3) = 4./3. * fxVIA - (5. * tendP(P1) + 4. * tendP(P4)) / 27. + 4. / 27. * dx * fxxc
-      enddo
+      ! Compute tend of inner point(s) on cells
+      if(DOF==3)then
+        ! For MCV3 only
+        do iCell = 1, Nx
+          P1    = pvIdx(1,iCell)
+          P2    = pvIdx(2,iCell)
+          P3    = pvIdx(3,iCell)
+          
+          fxVIA     = (f(P3) - f(P1)) / dx
+          tendP(P2) = 1.5 * fxVIA - 0.25 * (tendP(P1) + tendP(P3))
+        enddo
+      elseif(DOF==4)then
+        ! For MCV4 only
+        do iCell = 1, Nx
+          P1    = pvIdx(1,iCell)
+          P2    = pvIdx(2,iCell)
+          P3    = pvIdx(3,iCell)
+          P4    = pvIdx(4,iCell)
+          
+          fxVIA = (f(P4) - f(P1)) / dx
+          fxxc  = 4.5 * ( f(P1) - f(P2) - f(P3) + f(P4) ) / (dx**2)
+          
+          tendP(P2) = 4./3. * fxVIA - (4. * tendP(P1) + 5. * tendP(P4)) / 27. - 4. / 27. * dx * fxxc
+          tendP(P3) = 4./3. * fxVIA - (5. * tendP(P1) + 4. * tendP(P4)) / 27. + 4. / 27. * dx * fxxc
+        enddo
+      endif
       
       !tendP = -tendP
       
@@ -180,9 +193,15 @@ MODULE spatial_operators_mod
       real, intent(out) :: fitTendCL ! left side tend of the cell
       real, intent(out) :: fitTendCR ! right side tend of the cell
       
-      fitTendCL = (-11. * pv(1) + 18. * pv(2) - 9. * pv(3) + 2. * pv(4))/(2. * dh);
-      fitTendCR = ( 11. * pv(4) - 18. * pv(3) + 9. * pv(2) - 2. * pv(1))/(2. * dh);
-    
+      if(DOF==3)then
+        ! For MCV3 only
+        fitTendCL = -( pv(3) - 4. * pv(2) + 3. * pv(1)) / dh
+        fitTendCR =  ( pv(1) - 4. * pv(2) + 3. * pv(3)) / dh
+      elseif(DOF==4)then
+        ! For MCV4 only
+        fitTendCL = (-11. * pv(1) + 18. * pv(2) - 9. * pv(3) + 2. * pv(4))/(2. * dh);
+        fitTendCR = ( 11. * pv(4) - 18. * pv(3) + 9. * pv(2) - 2. * pv(1))/(2. * dh);
+      endif
     end subroutine polyfit_tend
     
     subroutine riemann_solver(tendP,fxL,fxR,qxL,qxR,eigenvalue)
@@ -243,13 +262,15 @@ MODULE spatial_operators_mod
       
       do iPatch = ifs, ife
         do j = jds, jde
-          call CD4(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ips,ipe,ids,ide)
+          if(DOF==3)call CD4(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ips,ipe,ids,ide) ! For MCV3 only
+          if(DOF==4)call CD6(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ips,ipe,ids,ide) ! For MCV4 only
         enddo
       enddo
       
       do iPatch = ifs, ife
         do i = ids, ide
-          call CD4(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jds,jde)
+          if(DOF==3)call CD4(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jds,jde) ! For MCV3 only
+          if(DOF==4)call CD6(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jds,jde) ! For MCV4 only
         enddo
       enddo
       
@@ -272,6 +293,21 @@ MODULE spatial_operators_mod
     
     end subroutine CD4
   
+    ! 6th-order center difference
+    subroutine CD6(dqdh,q,dh,ims,ime,its,ite)
+      integer, intent(in ) :: ims,ime,its,ite
+      real   , intent(in ) :: q   (ims:ime)
+      real   , intent(in ) :: dh
+      real   , intent(out) :: dqdh(its:ite)
+      
+      integer i
+      
+      do i = its, ite
+        dqdh(i) = (-q(i-3) + 9. * q(i-2) - 45. * q(i-1) + 45. * q(i+1) - 9. * q(i+2) + q(i+3)) / 60. / dh
+      enddo
+    
+    end subroutine CD6
+    
     subroutine unify_bdy_stat(stat)
       type(stat_field), intent(inout) :: stat
       

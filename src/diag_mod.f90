@@ -54,7 +54,7 @@ MODULE diag_mod
                 
                 energyOnCell(iCell,jCell,iPatch) = energyOnCell(iCell,jCell,iPatch) + 0.5 * mesh%weightsOnPV(iDOF,jDOF) * ( stat%phi(iPV,jPV,iPatch)**2                             &
                                                                                                                           + stat%u  (iPV,jPV,iPatch) * stat%contraU(iPV,jPV,iPatch) &
-                                                                                                                          + stat%v  (iPV,jPV,iPatch) * stat%contraV(iPV,jPV,iPatch))
+                                                                                                                          + stat%v  (iPV,jPV,iPatch) * stat%contraV(iPV,jPV,iPatch)) * mesh%sqrtG(iPV,jPV,iPatch)
               enddo
             enddo
           enddo

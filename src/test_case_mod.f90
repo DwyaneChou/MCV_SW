@@ -10,8 +10,15 @@ module test_case_mod
   contains
     
   subroutine initTestCase
-    if(case_num == 2) call case2(stat(0))
-    if(case_num == 6) call case6(stat(0))
+    if(case_num == 2)then
+      print*,''
+      print*,'test case 2 is selected'
+      call case2(stat(0))
+    elseif(case_num == 6)then
+      print*,''
+      print*,'test case 6 is selected'
+      call case6(stat(0))
+    endif
     
     print*,''
     print*,'max/min value of u   : ',maxval(stat(0)%u  ),minval(stat(0)%u  )
