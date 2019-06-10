@@ -39,10 +39,11 @@ MODULE diag_mod
       type(stat_field), intent(in ) :: stat
       real            , intent(out) :: total_energy
       
-      real   energyOnCell(Nx,Ny,Nf)
+      real energyOnCell(Nx,Ny,Nf)
+      real KE,PE
       integer iCell,jCell,iPatch,iPV,jPV,iDOF,jDOF
       
-      energyOnCell = 0
+      energyOnCell = 0.
       total_energy = 0.
       do iPatch = ifs, ife
         do jCell = 1, Ny
@@ -52,9 +53,10 @@ MODULE diag_mod
                 iPV = pvIdx(iDOF,iCell)
                 jPV = pvIdx(jDOF,jCell)
                 
-                energyOnCell(iCell,jCell,iPatch) = energyOnCell(iCell,jCell,iPatch) + 0.5 * mesh%weightsOnPV(iDOF,jDOF) * ( stat%phi(iPV,jPV,iPatch)**2                             &
-                                                                                                                          + stat%u  (iPV,jPV,iPatch) * stat%contraU(iPV,jPV,iPatch) &
-                                                                                                                          + stat%v  (iPV,jPV,iPatch) * stat%contraV(iPV,jPV,iPatch)) * mesh%sqrtG(iPV,jPV,iPatch)
+                KE = 0.5 * stat%phi(iPV,jPV,iPatch) * (stat%u(iPV,jPV,iPatch) * stat%contraU(iPV,jPV,iPatch) + stat%v(iPV,jPV,iPatch) * stat%contraV(iPV,jPV,iPatch))
+                PE = 0.5 * (stat%phi(iPV,jPV,iPatch) + mesh%phi_s(iPV,jPV,iPatch))**2
+                
+                energyOnCell(iCell,jCell,iPatch) = energyOnCell(iCell,jCell,iPatch) + mesh%weightsOnPV(iDOF,jDOF) * mesh%sqrtG(iPV,jPV,iPatch) * (KE + PE)
               enddo
             enddo
           enddo
