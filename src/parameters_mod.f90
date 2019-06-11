@@ -199,7 +199,7 @@ module parameters_mod
       stop 'Unknown integral scheme, please select from RK3_TVD or RK4 ...'
     endif
     
-    nsteps = (run_days * 86400 + run_hours * 3600 + run_minutes * 60 + run_seconds) / dt
+    nsteps = total_run_time / dt
     
   end subroutine initParameters
   
