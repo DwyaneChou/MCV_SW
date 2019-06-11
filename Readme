@@ -1,0 +1,11 @@
+Usage:
+
+Compilation:
+   cd build
+   FC=gfortran cmake ..
+   make
+Run:
+   cd run
+   ln -s ../build/MCV_SW.exe .
+   ./MCV_SW.exe
+
