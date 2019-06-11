@@ -15,7 +15,7 @@ contains
     
     ! Local variables
     real :: a,b
-
+#ifdef CUBE
     select case(iPatch)      
     case(1:4)
       lambda = x + dble(iPatch - 1) * pi / 2.
@@ -33,7 +33,12 @@ contains
       lambda =  atan2(a , b            )
       theta  = -atan2(1., sqrt(a*a+b*b))  
     end select
+#endif
 
+#ifdef LONLAT
+    lambda=x
+    theta =y
+#endif
     return
   end subroutine pointProjPlane2Sphere
 
@@ -44,7 +49,8 @@ contains
     integer, intent(in ) :: iPatch            ! Patch index
     real   , intent(in ) :: lambda,theta ! spherical coordinate
     real   , intent(out) :: x,y          ! local coordinate on patch
-
+    
+#ifdef CUBE
     select case(iPatch)
     case(1:4)
       x = atan(tan(lambda-float(iPatch-1)*pi/2.))
@@ -53,7 +59,12 @@ contains
       x = atan((-1.)**(iPatch+1)*sin(lambda)/tan(theta))
       y = atan(-cos(lambda)/tan(theta))
     end select
+#endif
 
+#ifdef LONLAT
+    x=lambda
+    y=theta
+#endif
     return
   end subroutine pointProjSphere2Plane
   
@@ -156,7 +167,9 @@ contains
   ! Local variables
     real     :: rho
   ! -------------------------
-          
+    matrixG = 0.
+    
+#ifdef CUBE
     rho = sqrt(1.+tan(x)**2.+tan(y)**2.)
 
     matrixG(1,1) = 1.+tan(x)**2.
@@ -164,8 +177,16 @@ contains
     matrixG(2,1) = matrixG(1,2)
     matrixG(2,2) = 1.+tan(y)**2.
     
-    matrixG      = radius**2 / (rho**4. * cos(x)**2. * cos(y)**2.) * matrixG
+    matrixG      = matrixG / (rho**4. * cos(x)**2. * cos(y)**2.)
+#endif
 
+#ifdef LONLAT
+    matrixG(1,1) = 1.
+    matrixG(2,2) = 1.
+#endif
+
+    matrixG = radius**2 * matrixG
+    
     return
   end subroutine calc_matrixG
 
@@ -178,15 +199,25 @@ contains
   ! Local variables
     real                     :: rho
   ! -------------------------
-    
+    matrixIG = 0.
+
+#ifdef CUBE
     rho = sqrt(1.+tan(x)**2.+tan(y)**2.)
 
     matrixIG(1,1)=1.+tan(y)**2.
     matrixIG(1,2)=tan(x)*tan(y)
     matrixIG(2,1)=matrixIG(1,2)
     matrixIG(2,2)=1.+tan(x)**2.
+    
+    matrixIG = (rho**2.*cos(x)**2.*cos(y)**2.) * matrixIG
+#endif
 
-    matrixIG = (rho**2.*cos(x)**2.*cos(y)**2.) / radius**2 * matrixIG
+#ifdef LONLAT
+    matrixIG(1,1) = 1.
+    matrixIG(2,2) = 1.
+#endif
+
+    matrixIG = matrixIG / radius**2
 
     return
   end subroutine calc_matrixIG
@@ -201,11 +232,14 @@ contains
     real                 :: rho
   ! -----------------------
 
+#ifdef CUBE
     rho = sqrt(1 + tan(x)**2 + tan(y)**2)
-    
-    jab = 1. /( cos(x)**2 * cos(y)**2 * rho**3 )
-    
-    jab = jab * radius**2
+    jab = radius**2 /( cos(x)**2 * cos(y)**2 * rho**3 )
+#endif
+
+#ifdef LONLAT
+    jab = radius * cos(y)
+#endif
 
     return
   end subroutine calc_Jacobian
@@ -220,7 +254,9 @@ contains
   ! Local variables
     real   :: alambda,atheta,a,b,c,d,temp
   ! -------------------------
+    matrixIA = 0.
     
+#ifdef CUBE
     if (iPatch <= 4) then
       alambda=lambda-dble(iPatch-1)*pi/2.
       atheta=theta
@@ -260,7 +296,12 @@ contains
       matrixIA(2,1)=a/temp
       matrixIA(2,2)=b/c/temp
     endif
+#endif
 
+#ifdef LONLAT
+    matrixIA(1,1) = 1.
+    matrixIA(2,2) = 1.
+#endif
     matrixIA = matrixIA/radius
           
     return
@@ -277,6 +318,9 @@ contains
     real     :: alambda,atheta,a,b,c,d,temp,r
   ! -------------------------
 
+    matrixA = 0.
+    
+#ifdef CUBE
     if (iPatch <= 4) then
       alambda=lambda-dble(iPatch-1)*pi/2.
       atheta=theta
@@ -315,6 +359,12 @@ contains
       matrixA(1,2)=a*c*temp
       matrixA(2,2)=b*c*c*temp
     endif
+#endif
+
+#ifdef LONLAT
+    matrixA(1,1) = 1.
+    matrixA(2,2) = 1.
+#endif
 
     matrixA = matrixA*radius
 

@@ -1,8 +1,14 @@
 MODULE constants_mod
     
   implicit none
+#ifdef MCV3
   INTEGER,PARAMETER :: DOF       = 3    ! Degree of Freedoms within a 1D element
-  
+#endif
+
+#ifdef MCV4
+  INTEGER,PARAMETER :: DOF       = 4    ! Degree of Freedoms within a 1D element
+#endif
+    
   REAL,PARAMETER    :: gravity   = 9.80616
   REAL,PARAMETER    :: pi        = 2.*asin(1.)
   

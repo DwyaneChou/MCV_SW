@@ -57,8 +57,6 @@ MODULE mesh_mod
     integer :: iPV, jPV, iCell, jCell, iPatch, iVar, iDOF, jDOF
     integer :: iPVs, iPVe, jPVs, jPVe
     real    :: rho
-    real    :: sinx, cosx, secx, cscx, tanx, cotx, &
-               siny, cosy, secy, cscy, tany, coty
     
     ! Allocate arrays in structures
     allocate( mesh%xP       (      ips:ipe, jps:jpe, ifs:ife) )
@@ -150,19 +148,6 @@ MODULE mesh_mod
           call calc_matrixIA(mesh%matrixIA(:, :, iPV, jPV, iPatch), mesh%lonP(iPV, jPV, iPatch), mesh%latP(iPV, jPV, iPatch), iPatch)
           call calc_Jacobian(mesh%sqrtG   (      iPV, jPV, iPatch), mesh%xP  (iPV, jPV, iPatch), mesh%yP  (iPV, jPV, iPatch))
           
-          sinx = mesh%sinx(iPV, jPV, iPatch)
-          cosx = mesh%cosx(iPV, jPV, iPatch)
-          tanx = mesh%tanx(iPV, jPV, iPatch)
-          cotx = mesh%cotx(iPV, jPV, iPatch)
-          secx = mesh%secx(iPV, jPV, iPatch)
-          cscx = mesh%cscx(iPV, jPV, iPatch)
-          siny = mesh%siny(iPV, jPV, iPatch)
-          cosy = mesh%cosy(iPV, jPV, iPatch)
-          tany = mesh%tany(iPV, jPV, iPatch)
-          coty = mesh%coty(iPV, jPV, iPatch)
-          secy = mesh%secy(iPV, jPV, iPatch)
-          cscy = mesh%cscy(iPV, jPV, iPatch)
-          
           mesh%f(iPV, jPV, iPatch) = 2. * Omega * sin(mesh%latP(iPV,jPV,iPatch))
         end do
       end do
@@ -186,7 +171,7 @@ MODULE mesh_mod
       end do
     end do
     
-    if(DOF==3)then
+#ifdef MCV3
       ! Calculate weights of points in a cell For MCV3 only
       mesh%weightsOnPV(1,1) = 1.
       mesh%weightsOnPV(1,2) = 4.
@@ -194,7 +179,9 @@ MODULE mesh_mod
       mesh%weightsOnPV(2,:) = 4. * mesh%weightsOnPV(1,:)
       mesh%weightsOnPV(3,:) = 1. * mesh%weightsOnPV(1,:)
       mesh%weightsOnPV      = mesh%weightsOnPV / 36.
-    elseif(DOF==4)then
+#endif
+
+#ifdef MCV4
       ! Calculate weights of points in a cell For MCV4 only
       mesh%weightsOnPV(1,1) = 1.
       mesh%weightsOnPV(1,2) = 3.
@@ -204,7 +191,7 @@ MODULE mesh_mod
       mesh%weightsOnPV(3,:) = 3. * mesh%weightsOnPV(1,:)
       mesh%weightsOnPV(4,:) = mesh%weightsOnPV(1,:)
       mesh%weightsOnPV      = mesh%weightsOnPV / 80.
-    endif
+#endif
     
     ! Calculate areaCell
     call EquiangularAllAreas(Nx, mesh%areaCell)

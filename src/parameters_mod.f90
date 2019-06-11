@@ -17,6 +17,14 @@ module parameters_mod
   integer :: case_num
   
   ! Domain
+#ifdef CUBE
+  character(6) :: gridsys = 'CUBE'
+#endif
+
+#ifdef LONLAT
+  character(6) :: gridsys = 'LONLAT'
+#endif
+  
   real    :: dx     !  grid-spacing in the x-direction
   real    :: dy     !  grid-spacing in the y-direction
   
@@ -65,12 +73,23 @@ module parameters_mod
   integer :: nIntegralSubSteps ! number of integral substeps in temporal integration scheme
   integer :: nsteps            ! total integral steps
   
+#ifdef CUBE
   integer, parameter :: Nf = 6           ! Number of cube faces
   
   real    :: x_min = -45.   !  start location of x-direction
   real    :: x_max =  45.   !  end location of x-direction
   real    :: y_min = -45.   !  start location of y-direction
   real    :: y_max =  45.   !  end location of y-direction
+#endif
+
+#ifdef LONLAT
+  integer ,parameter :: Nf = 1
+  
+  real    :: x_min =   0.   !  start location of x-direction
+  real    :: x_max = 360.   !  end location of x-direction
+  real    :: y_min = -90.   !  start location of y-direction
+  real    :: y_max =  90.   !  end location of y-direction
+#endif
   
   ! Model run time control variables
   integer :: total_run_time   ! total run time for this model in seconds, this variable is determined by run_days, run_hours ...

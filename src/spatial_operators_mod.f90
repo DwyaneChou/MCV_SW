@@ -41,10 +41,18 @@ MODULE spatial_operators_mod
       integer i,j,iPatch
       integer P1
       
+#ifdef CUBE      
       phiGu = stat%phiG * stat%contraU
       phiGv = stat%phiG * stat%contraV
       E     = stat%phi + mesh%phi_s + 0.5 * (stat%contraU * stat%u + stat%contraV * stat%v)
-      
+#endif
+
+#ifdef LONLAT
+      phiGu = stat%phi * stat%u
+      phiGv = stat%phi * stat%v * mesh%cosy
+      E     = stat%phi + mesh%phi_s + 0.5 * (stat%u**2 + stat%v**2)
+#endif
+
       ! calculate tend in x direction
       !$OMP PARALLEL DO PRIVATE(i,j,Ex,ux,phiGux,PhiGx,lambda_x)
       do iPatch = ifs, ife
