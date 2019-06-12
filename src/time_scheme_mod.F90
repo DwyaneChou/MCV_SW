@@ -94,12 +94,7 @@
       
       stat_new%phi = stat_new%phiG / mesh%sqrtG
       
-      ! Fill ghost band and unify values of common points
-      call convert_wind_P2SP       (stat_new)
-      call fill_ghost              (stat_new)
-      call unify_bdy_stat          (stat_new)
-      call convert_wind_SP2P       (stat_new)
-      call convert_wind_cov2contrav(stat_new)
+      call correct_bdy_ghost(stat_new)
       
       stat_new%phiG = stat_new%phi * mesh%sqrtG
       
@@ -117,12 +112,7 @@
       
       stat_new%phi = stat_new%phiG / mesh%sqrtG
       
-      ! Fill ghost band and unify values of common points
-      call convert_wind_P2SP       (stat_new)
-      call fill_ghost              (stat_new)
-      call unify_bdy_stat          (stat_new)
-      call convert_wind_SP2P       (stat_new)
-      call convert_wind_cov2contrav(stat_new)
+      call correct_bdy_ghost(stat_new)
       
       stat_new%phiG = stat_new%phi * mesh%sqrtG
       
@@ -140,12 +130,7 @@
       
       stat_new%phi = stat_new%phiG / mesh%sqrtG
       
-      ! Fill ghost band and unify values of common points
-      call convert_wind_P2SP       (stat_new)
-      call fill_ghost              (stat_new)
-      call unify_bdy_stat          (stat_new)
-      call convert_wind_SP2P       (stat_new)
-      call convert_wind_cov2contrav(stat_new)
+      call correct_bdy_ghost(stat_new)
       
       stat_new%phiG = stat_new%phi * mesh%sqrtG
       
@@ -160,5 +145,16 @@
       stat_old%u    = stat_new%u  
       stat_old%v    = stat_new%v
     end subroutine switch_stat
+    
+    subroutine correct_bdy_ghost(stat)
+      type(stat_field), intent(inout) :: stat
+      
+      ! Fill ghost band and unify values of common points on boundary
+      call convert_wind_P2SP       (stat)
+      call fill_ghost              (stat)
+      call unify_bdy_stat          (stat)
+      call convert_wind_SP2P       (stat)
+      call convert_wind_cov2contrav(stat)
+    end subroutine correct_bdy_ghost
     
   end module time_scheme_mod
