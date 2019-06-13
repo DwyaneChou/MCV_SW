@@ -20,6 +20,10 @@ module test_case_mod
       call case6(stat(0))
     endif
     
+#ifdef LONLAT
+    call fill_ghost(stat(0))
+#endif
+    
     print*,''
     print*,'max/min value of u   : ',maxval(stat(0)%u  ),minval(stat(0)%u  )
     print*,'max/min value of v   : ',maxval(stat(0)%v  ),minval(stat(0)%v  )

@@ -193,12 +193,15 @@ MODULE mesh_mod
       mesh%weightsOnPV      = mesh%weightsOnPV / 80.
 #endif
     
+#ifdef CUBE
     ! Calculate areaCell
     call EquiangularAllAreas(Nx, mesh%areaCell)
     mesh%areaCell = mesh%areaCell * radius **2
-    
+#endif
+
   end subroutine initMesh
   
+#ifdef CUBE
   !------------------------------------------------------------------------------
   ! SUBROUTINE EquiangularAllAreas
   !
@@ -260,5 +263,6 @@ MODULE mesh_mod
     !print*,''
     !print*,'total area error     : ', dbg - 4. * pi / 6. !DBG
   END SUBROUTINE EquiangularAllAreas
+#endif
 END MODULE mesh_mod
 

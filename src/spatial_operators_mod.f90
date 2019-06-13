@@ -105,9 +105,19 @@ MODULE spatial_operators_mod
       tend%u    = -flux_x + mesh%sqrtG(ids:ide,jds:jde,:) * (vorticity + mesh%f(ids:ide,jds:jde,:)) * stat%contraV(ids:ide,jds:jde,:)
       tend%v    = -flux_y - mesh%sqrtG(ids:ide,jds:jde,:) * (vorticity + mesh%f(ids:ide,jds:jde,:)) * stat%contraU(ids:ide,jds:jde,:)
       
+#ifdef LONLAT
+      tend%phiG(:,jds,:) = sum(radius * mesh%cosy(:,jds+1,:) * dx / (DOF - 1) * stat%v(:,jds+1,:)) / (radius**2 * 2. * pi * sin(dy/(DOF - 1)))
+      tend%phiG(:,jde,:) = sum(radius * mesh%cosy(:,jde-1,:) * dx / (DOF - 1) * stat%v(:,jde-1,:)) / (radius**2 * 2. * pi * sin(dy/(DOF - 1)))
+      tend%u   (:,jds,:) = 0.
+      tend%u   (:,jde,:) = 0.
+      tend%v   (:,jds,:) = 0.
+      tend%v   (:,jde,:) = 0.
+#endif
+
+      !print*,'tend%phiG on pole ',tend%phiG(1,jds,1)
       !print*,'min/max value of u              : ', minval(stat%u      ), maxval(stat%u      )
       !print*,'min/max value of v              : ', minval(stat%v      ), maxval(stat%v      )
-      !print*,'min/max value of phi            : ', minval(stat%phi    ), maxval(stat%phi    )
+      !print*,'min/max value of phiG           : ', minval(stat%phiG   ), maxval(stat%phiG   )
       !print*,'min/max value of stat%contraU   : ', minval(stat%contraU), maxval(stat%contraU)
       !print*,'min/max value of stat%contraV   : ', minval(stat%contraV), maxval(stat%contraV)
       !print*,'min/max value of flux_x         : ', minval(flux_x      ), maxval(flux_x      )
@@ -116,7 +126,7 @@ MODULE spatial_operators_mod
       !print*,'min/max value of div_y          : ', minval(div_y       ), maxval(div_y       )
       !print*,'min/max value of dudt           : ', minval(tend%u      ), maxval(tend%u      )
       !print*,'min/max value of dvdt           : ', minval(tend%v      ), maxval(tend%v      )
-      !print*,'min/max value of dphidt         : ', minval(tend%phi    ), maxval(tend%phi    )
+      !print*,'min/max value of dphiGdt        : ', minval(tend%phiG   ), maxval(tend%phiG   )
       !print*,'min/max value of vorticity      : ', minval(vorticity   ), maxval(vorticity   )
       
     end subroutine spatial_operator
@@ -322,6 +332,7 @@ MODULE spatial_operators_mod
         call polyfit_tend(qxL_fit(iCell),qxR_fit(iCell),qCell,dx)
       enddo
       
+      !do iCell = jls, jle
       do iCell = 2, Ny
         fxL(iCell) = fxR_fit(iCell-1)
         fxR(iCell) = fxL_fit(iCell)
@@ -337,10 +348,20 @@ MODULE spatial_operators_mod
         ! tendP(P4) = tendP(P1(iCell+1))
       enddo
       
+      ! Sourth Pole
+      iCell     = 1
+      P1        = pvIdx(1,iCell)
+      tendP(P1) = fxL_fit(iCell)
+      
+      ! North Pole
+      iCell     = Ny + 1
+      P1        = pvIdx(1,iCell)
+      tendP(P1) = fxR_fit(iCell-1)
+      
       ! Compute tend of inner point(s) on cells
 #ifdef MCV3
         ! For MCV3 only
-        do iCell = 2, Ny-1
+        do iCell = 1, Ny
           P1    = pvIdx(1,iCell)
           P2    = pvIdx(2,iCell)
           P3    = pvIdx(3,iCell)
@@ -352,7 +373,7 @@ MODULE spatial_operators_mod
 
 #ifdef MCV4
         ! For MCV4 only
-        do iCell = 2, Ny-1
+        do iCell = 1, Ny
           P1    = pvIdx(1,iCell)
           P2    = pvIdx(2,iCell)
           P3    = pvIdx(3,iCell)
@@ -484,6 +505,11 @@ MODULE spatial_operators_mod
 
       vorticity = (dvdx - dudy) / mesh%sqrtG(ids:ide,jds:jde,:)
       
+#ifdef LONLAT
+      vorticity(ids:ide,jds,:) = sum(u(ids:ide,jds+1,:) * radius * dx / (DOF - 1)) / ( radius**2 * 2. * pi * sin(dy/(DOF-1)) ) / mesh%sqrtG(ids:ide,jds+1,:) * 4.
+      vorticity(ids:ide,jde,:) = sum(u(ids:ide,jde-1,:) * radius * dx / (DOF - 1)) / ( radius**2 * 2. * pi * sin(dy/(DOF-1)) ) / mesh%sqrtG(ids:ide,jde-1,:) * 4.
+#endif
+    !print*,'vorticity on pole : ',vorticity(1,jds,:),vorticity(1,jde,:)
     end subroutine calc_vorticity
     
     ! 2th-order center difference

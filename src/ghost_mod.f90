@@ -21,6 +21,7 @@ MODULE ghost_mod
   contains
   
   subroutine initGhost
+#ifdef CUBE
     integer :: i,j
     integer :: iPatch ! computational patch
     integer :: gpatch ! ghost patch
@@ -75,9 +76,10 @@ MODULE ghost_mod
         ENDIF
       ENDDO
     ENDDO
-    
+#endif
   end subroutine initGhost
   
+#ifdef CUBE  
   !------------------------------------------------------------------------------
   ! SUBROUTINE CubedSphereFillHalo
   !
@@ -179,6 +181,7 @@ MODULE ghost_mod
     field = ghost_target
   
   end subroutine CubedSphereFillGhost
+#endif  
   
   subroutine linear_interp(dest,src,iref,coef)
     real   , intent(out) :: dest(ids:ide)
@@ -226,14 +229,62 @@ MODULE ghost_mod
     
   end subroutine linear_interp
   
+#ifdef LONLAT
+  subroutine lonlatFillGhost(field)
+  real, intent(inout) :: field(ips:ipe,jps:jpe,ifs:ife)
+  
+  integer i,j
+  integer iref, jref
+  
+  ! Zonal
+  do j = jds, jde
+    do i = ips, ids
+      iref       = ide + i - 1
+      field(i,j,:) = field(iref,j,:)
+    enddo
+  enddo
+  
+  do j = jds, jde
+    do i = ide, ipe
+      iref       = ids + i - ide
+      field(i,j,:) = field(iref,j,:)
+    enddo
+  enddo
+  
+  ! Meridional, the points over the pole are selected on opposite location
+  do i = ids, ide
+    iref = i + (nPVx - 1) / 2 - int(2 * i / (nPVx - 1)) * (nPVx - 1)
+    if(i == (nPVx - 1) / 2) iref = nPVx - 1
+    if(i >=  nPVx - 1     ) iref = (nPVx - 1) / 2 + i - nPVx + 1
+    
+    do j = jps, jds
+      jref         = jds - j + 1
+      field(i,j,:) = field(iref,jref,:)
+    enddo
+    
+    do j = jde, jpe
+      jref         = jde - (j - jde)
+      field(i,j,:) = field(iref,jref,:)
+    enddo
+  enddo
+  
+  end subroutine lonlatFillGhost
+#endif  
+  
   ! Fill up halo with ghost points  
   subroutine fill_ghost(stat)
     type(stat_field), intent(inout) :: stat
-    
+#ifdef CUBE
     call CubedSphereFillGhost(stat%zonal_wind     )
     call CubedSphereFillGhost(stat%meridional_wind)
     call CubedSphereFillGhost(stat%phi            )
-    
+#endif
+
+#ifdef LONLAT
+    call lonlatFillGhost(stat%u  )
+    call lonlatFillGhost(stat%v  )
+    call lonlatFillGhost(stat%phi)
+#endif
   end subroutine fill_ghost
   
 END MODULE ghost_mod

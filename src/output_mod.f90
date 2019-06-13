@@ -151,20 +151,36 @@ module output_mod
       type(stat_field), intent(inout) :: stat
       
       ! low left corner
-      stat%u(ips:ids-1,jps:jds-1,:) = FillValue
-      stat%v(ips:ids-1,jps:jds-1,:) = FillValue
+      stat%phiG           (ips:ids-1,jps:jds-1,:) = FillValue
+      stat%phi            (ips:ids-1,jps:jds-1,:) = FillValue
+      stat%u              (ips:ids-1,jps:jds-1,:) = FillValue
+      stat%v              (ips:ids-1,jps:jds-1,:) = FillValue
+      stat%zonal_wind     (ips:ids-1,jps:jds-1,:) = FillValue
+      stat%meridional_wind(ips:ids-1,jps:jds-1,:) = FillValue
       
       ! low right corner
-      stat%u(ide+1:ipe,jps:jds-1,:) = FillValue
-      stat%v(ide+1:ipe,jps:jds-1,:) = FillValue
+      stat%phiG           (ide+1:ipe,jps:jds-1,:) = FillValue
+      stat%phi            (ide+1:ipe,jps:jds-1,:) = FillValue
+      stat%u              (ide+1:ipe,jps:jds-1,:) = FillValue
+      stat%v              (ide+1:ipe,jps:jds-1,:) = FillValue
+      stat%zonal_wind     (ide+1:ipe,jps:jds-1,:) = FillValue
+      stat%meridional_wind(ide+1:ipe,jps:jds-1,:) = FillValue
       
       ! up left corner
-      stat%u(ips:ids-1,jde+1:jpe,:) = FillValue
-      stat%v(ips:ids-1,jde+1:jpe,:) = FillValue
+      stat%phiG           (ips:ids-1,jde+1:jpe,:) = FillValue
+      stat%phi            (ips:ids-1,jde+1:jpe,:) = FillValue
+      stat%u              (ips:ids-1,jde+1:jpe,:) = FillValue
+      stat%v              (ips:ids-1,jde+1:jpe,:) = FillValue
+      stat%zonal_wind     (ips:ids-1,jde+1:jpe,:) = FillValue
+      stat%meridional_wind(ips:ids-1,jde+1:jpe,:) = FillValue
       
       ! up right corner
-      stat%u(ide+1:ipe,jde+1:jpe,:) = FillValue
-      stat%v(ide+1:ipe,jde+1:jpe,:) = FillValue
+      stat%phiG           (ide+1:ipe,jde+1:jpe,:) = FillValue
+      stat%phi            (ide+1:ipe,jde+1:jpe,:) = FillValue
+      stat%u              (ide+1:ipe,jde+1:jpe,:) = FillValue
+      stat%v              (ide+1:ipe,jde+1:jpe,:) = FillValue
+      stat%zonal_wind     (ide+1:ipe,jde+1:jpe,:) = FillValue
+      stat%meridional_wind(ide+1:ipe,jde+1:jpe,:) = FillValue
     end subroutine addFillValue
 end module output_mod
     

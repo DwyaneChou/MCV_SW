@@ -34,6 +34,10 @@
       call spatial_operator (stat(one), tend(one))
       call update_stat      (stat(two), stat(one), tend(one), 0.5 * dt)
       
+      !call addFillValue(stat(two)) ! add fill value for output
+      !call history_write_stat(stat(two),2)
+      !stop
+      
       call spatial_operator (stat(two), tend(two))
       call update_stat      (stat(three), stat(one), tend(two), 0.5 * dt)
       
@@ -94,15 +98,22 @@
       
       stat_new%phi = stat_new%phiG / mesh%sqrtG
       
-      ! Fill ghost band and unify values of common points
-      call convert_wind_P2SP       (stat_new)
-      call fill_ghost              (stat_new)
-      call unify_bdy_stat          (stat_new)
-      call convert_wind_SP2P       (stat_new)
-      call convert_wind_cov2contrav(stat_new)
+      call correct_bdy_ghost(stat_new)
       
       stat_new%phiG = stat_new%phi * mesh%sqrtG
       
+      !print*,'max/min value of old phiG : ',maxval(stat_old%phiG(ids:ide,jds:jde,ifs:ife)), minval(stat_old%phiG(ids:ide,jds:jde,ifs:ife))
+      !print*,'max/min value of old u    : ',maxval(stat_old%u   (ids:ide,jds:jde,ifs:ife)), minval(stat_old%u   (ids:ide,jds:jde,ifs:ife))
+      !print*,'max/min value of old v    : ',maxval(stat_old%v   (ids:ide,jds:jde,ifs:ife)), minval(stat_old%v   (ids:ide,jds:jde,ifs:ife))
+      !print*,''
+      !print*,'max/min value of tend phiG: ',maxval(tend%phiG(ids:ide,jds:jde,ifs:ife)), minval(tend%phiG(ids:ide,jds:jde,ifs:ife))
+      !print*,'max/min value of tend u   : ',maxval(tend%u   (ids:ide,jds:jde,ifs:ife)), minval(tend%u   (ids:ide,jds:jde,ifs:ife))
+      !print*,'max/min value of tend v   : ',maxval(tend%v   (ids:ide,jds:jde,ifs:ife)), minval(tend%v   (ids:ide,jds:jde,ifs:ife))
+      !print*,''
+      !print*,'max/min value of new phiG : ',maxval(stat_new%phiG(ids:ide,jds:jde,ifs:ife)), minval(stat_new%phiG(ids:ide,jds:jde,ifs:ife))
+      !print*,'max/min value of new u    : ',maxval(stat_new%u   (ids:ide,jds:jde,ifs:ife)), minval(stat_new%u   (ids:ide,jds:jde,ifs:ife))
+      !print*,'max/min value of new v    : ',maxval(stat_new%v   (ids:ide,jds:jde,ifs:ife)), minval(stat_new%v   (ids:ide,jds:jde,ifs:ife))
+      !stop
     end subroutine update_stat
     
     subroutine update_stat_RK3_TVD_1(stat_new, stat_old,stat1, tend)
@@ -117,12 +128,7 @@
       
       stat_new%phi = stat_new%phiG / mesh%sqrtG
       
-      ! Fill ghost band and unify values of common points
-      call convert_wind_P2SP       (stat_new)
-      call fill_ghost              (stat_new)
-      call unify_bdy_stat          (stat_new)
-      call convert_wind_SP2P       (stat_new)
-      call convert_wind_cov2contrav(stat_new)
+      call correct_bdy_ghost(stat_new)
       
       stat_new%phiG = stat_new%phi * mesh%sqrtG
       
@@ -140,12 +146,7 @@
       
       stat_new%phi = stat_new%phiG / mesh%sqrtG
       
-      ! Fill ghost band and unify values of common points
-      call convert_wind_P2SP       (stat_new)
-      call fill_ghost              (stat_new)
-      call unify_bdy_stat          (stat_new)
-      call convert_wind_SP2P       (stat_new)
-      call convert_wind_cov2contrav(stat_new)
+      call correct_bdy_ghost(stat_new)
       
       stat_new%phiG = stat_new%phi * mesh%sqrtG
       
@@ -160,5 +161,23 @@
       stat_old%u    = stat_new%u  
       stat_old%v    = stat_new%v
     end subroutine switch_stat
+    
+    subroutine correct_bdy_ghost(stat)
+      type(stat_field), intent(inout) :: stat
+#ifdef CUBE      
+      ! Fill ghost band and unify values of common points on boundary
+      call convert_wind_P2SP       (stat)
+      call fill_ghost              (stat)
+      call unify_bdy_stat          (stat)
+      call convert_wind_SP2P       (stat)
+      call convert_wind_cov2contrav(stat)
+#endif
+
+#ifdef LONLAT
+      call fill_ghost              (stat)
+      call convert_wind_P2SP       (stat)
+      call convert_wind_cov2contrav(stat)
+#endif
+    end subroutine correct_bdy_ghost
     
   end module time_scheme_mod

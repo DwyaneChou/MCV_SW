@@ -60,7 +60,7 @@
         
         if(mod(it*dt,float(history_interval))==0.and.(it*dt>=history_interval))then
           output_idx = output_idx + 1
-          call addFillValue(stat(new))
+          call addFillValue(stat(new)) ! add fill value for output
           call history_write_stat(stat(new),output_idx)
           call calc_total_mass  (total_mass  ,stat(new))
           call calc_total_energy(total_energy,stat(old))
