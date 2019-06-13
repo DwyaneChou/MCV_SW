@@ -190,7 +190,7 @@ MODULE ghost_mod
     integer P1,P2,P3,P4
     real    q1,q2,q3,q4
     
-    if(DOF==3)then
+#ifdef MCV3
       ! For MCV3 only
       do i = ids,ide
         P1 = pvIdx(1,iref(i))
@@ -204,7 +204,9 @@ MODULE ghost_mod
         dest(i) = q1 - ((3.*q1 - 4.*q2 + q3)*coef(i)) / dx + (2.*(q1 - 2.*q2 + q3)*coef(i)**2) / (dx**2)
       
       enddo
-    elseif(DOF==4)then
+#endif
+
+#ifdef MCV4
       ! For MCV4 only
       do i = ids,ide
         P1 = pvIdx(1,iref(i))
@@ -220,7 +222,7 @@ MODULE ghost_mod
         dest(i) = (2.*dx**3.*q1 + dx**2.*(-11.*q1 + 18.*q2 - 9.*q3 + 2.*q4) * coef(i) + 9.*dx*(2.*q1 - 5.*q2 + 4.*q3 - q4)*coef(i)**2. + 9.*(-q1 + 3.*q2 - 3.*q3 + q4)*coef(i)**3.) / (2.*dx**3.)
       
       enddo
-    endif
+#endif
     
   end subroutine linear_interp
   
