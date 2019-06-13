@@ -34,15 +34,20 @@
       call spatial_operator (stat(one), tend(one))
       call update_stat      (stat(two), stat(one), tend(one), 0.5 * dt)
       
-      !call addFillValue(stat(two)) ! add fill value for output
-      !call history_write_stat(stat(two),2)
-      !stop
+      call addFillValue(stat(two)) ! add fill value for output
+      call history_write_stat(stat(two),2)
       
       call spatial_operator (stat(two), tend(two))
       call update_stat      (stat(three), stat(one), tend(two), 0.5 * dt)
       
+      call addFillValue(stat(three)) ! add fill value for output
+      call history_write_stat(stat(three),3)
+      
       call spatial_operator (stat(three), tend(three))
       call update_stat      (stat(four), stat(one), tend(three), dt)
+      
+      call addFillValue(stat(four)) ! add fill value for output
+      call history_write_stat(stat(four),4)
       
       call spatial_operator(stat(four), tend(four))
       
@@ -51,7 +56,11 @@
       tend(new)%v    = (tend(one)%v    + 2. * tend(two)%v    + 2. * tend(three)%v    + tend(four)%v   ) / 6.
       
       call update_stat      (stat_new, stat_old, tend(new), dt)
-
+      
+      call addFillValue(stat_new) ! add fill value for output
+      call history_write_stat(stat_new,5)
+      stop
+      
     end subroutine RK4
     
     subroutine RK3_TVD(stat_new,stat_old)
@@ -98,9 +107,9 @@
       
       stat_new%phi = stat_new%phiG / mesh%sqrtG
       
-      call correct_bdy_ghost(stat_new)
-      
       stat_new%phiG = stat_new%phi * mesh%sqrtG
+      
+      call correct_bdy_ghost(stat_new)
       
       !print*,'max/min value of old phiG : ',maxval(stat_old%phiG(ids:ide,jds:jde,ifs:ife)), minval(stat_old%phiG(ids:ide,jds:jde,ifs:ife))
       !print*,'max/min value of old u    : ',maxval(stat_old%u   (ids:ide,jds:jde,ifs:ife)), minval(stat_old%u   (ids:ide,jds:jde,ifs:ife))

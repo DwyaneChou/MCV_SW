@@ -281,9 +281,10 @@ MODULE ghost_mod
 #endif
 
 #ifdef LONLAT
-    call lonlatFillGhost(stat%u  )
-    call lonlatFillGhost(stat%v  )
-    call lonlatFillGhost(stat%phi)
+    call lonlatFillGhost(stat%u   )
+    call lonlatFillGhost(stat%v   )
+    call lonlatFillGhost(stat%phi )
+    call lonlatFillGhost(stat%phiG)
 #endif
   end subroutine fill_ghost
   
