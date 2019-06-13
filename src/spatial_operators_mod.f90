@@ -106,8 +106,10 @@ MODULE spatial_operators_mod
       tend%v    = -flux_y - mesh%sqrtG(ids:ide,jds:jde,:) * (vorticity + mesh%f(ids:ide,jds:jde,:)) * stat%contraU(ids:ide,jds:jde,:)
       
 #ifdef LONLAT
-      tend%phiG(:,jds,:) = sum(radius * mesh%cosy(:,jds+1,:) * dx / (DOF - 1) * stat%v(:,jds+1,:)) / (radius**2 * 2. * pi * sin(dy/(DOF - 1)))
-      tend%phiG(:,jde,:) = sum(radius * mesh%cosy(:,jde-1,:) * dx / (DOF - 1) * stat%v(:,jde-1,:)) / (radius**2 * 2. * pi * sin(dy/(DOF - 1)))
+      !tend%phiG(ids:ide,jds,:) = sum(tend%phiG(ids:ide,jds,:)) / nPVx
+      !tend%phiG(ids:ide,jde,:) = sum(tend%phiG(ids:ide,jde,:)) / nPVx
+      tend%phiG(ids:ide,jds,:) = sum(radius * mesh%cosy(ids:ide,jds+1,:) * dx / (DOF - 1) * stat%v(ids:ide,jds+1,:)) / (radius**2 * 2. * pi * sin(dy/(DOF - 1)))
+      tend%phiG(ids:ide,jde,:) = sum(radius * mesh%cosy(ids:ide,jde-1,:) * dx / (DOF - 1) * stat%v(ids:ide,jde-1,:)) / (radius**2 * 2. * pi * sin(dy/(DOF - 1)))
       tend%u   (:,jds,:) = 0.
       tend%u   (:,jde,:) = 0.
       tend%v   (:,jds,:) = 0.
@@ -360,31 +362,31 @@ MODULE spatial_operators_mod
       
       ! Compute tend of inner point(s) on cells
 #ifdef MCV3
-        ! For MCV3 only
-        do iCell = 1, Ny
-          P1    = pvIdx(1,iCell)
-          P2    = pvIdx(2,iCell)
-          P3    = pvIdx(3,iCell)
-          
-          fxVIA     = (f(P3) - f(P1)) / dx
-          tendP(P2) = 1.5 * fxVIA - 0.25 * (tendP(P1) + tendP(P3))
-        enddo
+      ! For MCV3 only
+      do iCell = 1, Ny
+        P1    = pvIdx(1,iCell)
+        P2    = pvIdx(2,iCell)
+        P3    = pvIdx(3,iCell)
+        
+        fxVIA     = (f(P3) - f(P1)) / dx
+        tendP(P2) = 1.5 * fxVIA - 0.25 * (tendP(P1) + tendP(P3))
+      enddo
 #endif
 
 #ifdef MCV4
-        ! For MCV4 only
-        do iCell = 1, Ny
-          P1    = pvIdx(1,iCell)
-          P2    = pvIdx(2,iCell)
-          P3    = pvIdx(3,iCell)
-          P4    = pvIdx(4,iCell)
-          
-          fxVIA = (f(P4) - f(P1)) / dx
-          fxxc  = 4.5 * ( f(P1) - f(P2) - f(P3) + f(P4) ) / (dx**2)
-          
-          tendP(P2) = 4./3. * fxVIA - (4. * tendP(P1) + 5. * tendP(P4)) / 27. - 4. / 27. * dx * fxxc
-          tendP(P3) = 4./3. * fxVIA - (5. * tendP(P1) + 4. * tendP(P4)) / 27. + 4. / 27. * dx * fxxc
-        enddo
+      ! For MCV4 only
+      do iCell = 1, Ny
+        P1    = pvIdx(1,iCell)
+        P2    = pvIdx(2,iCell)
+        P3    = pvIdx(3,iCell)
+        P4    = pvIdx(4,iCell)
+        
+        fxVIA = (f(P4) - f(P1)) / dx
+        fxxc  = 4.5 * ( f(P1) - f(P2) - f(P3) + f(P4) ) / (dx**2)
+        
+        tendP(P2) = 4./3. * fxVIA - (4. * tendP(P1) + 5. * tendP(P4)) / 27. - 4. / 27. * dx * fxxc
+        tendP(P3) = 4./3. * fxVIA - (5. * tendP(P1) + 4. * tendP(P4)) / 27. + 4. / 27. * dx * fxxc
+      enddo
 #endif
       
       !tendP = -tendP

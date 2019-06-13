@@ -239,14 +239,14 @@ MODULE ghost_mod
   ! Zonal
   do j = jds, jde
     do i = ips, ids
-      iref       = ide + i - 1
+      iref         = ide + i - 1
       field(i,j,:) = field(iref,j,:)
     enddo
   enddo
   
   do j = jds, jde
     do i = ide, ipe
-      iref       = ids + i - ide
+      iref         = ids + i - ide
       field(i,j,:) = field(iref,j,:)
     enddo
   enddo
