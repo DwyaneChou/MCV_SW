@@ -59,13 +59,14 @@ MODULE spatial_operators_mod
             lambda_x(i) = eigenvalue_x(stat%contraU(i,j,iPatch),stat%phi(i,j,iPatch),mesh%matrixIG(:,:,i,j,iPatch))
           enddo
           
-#ifdef CUBE          
+#ifdef CUBE
           call calc_tendP(flux_x(:,j,iPatch),Ex    ,ux   ,lambda_x)
           call calc_tendP(div_x (:,j,iPatch),phiGux,phiGx,lambda_x)
 #endif
 
 #ifdef LONLAT
-
+          call calc_tendP_x(flux_x(:,j,iPatch),Ex    ,ux   ,lambda_x)
+          call calc_tendP_x(div_x (:,j,iPatch),phiGux,phiGx,lambda_x)
 #endif
         enddo
       enddo
@@ -91,7 +92,8 @@ MODULE spatial_operators_mod
 #endif
 
 #ifdef LONLAT
-
+          call calc_tendP_y(flux_y(i,:,iPatch),Ey    ,vy   ,lambda_y)
+          call calc_tendP_y(div_y (i,:,iPatch),phiGvy,phiGy,lambda_y)
 #endif
         enddo
       enddo
@@ -367,7 +369,7 @@ MODULE spatial_operators_mod
       !tendP = -tendP
       
     end subroutine calc_tendP_y
-#endif
+#endif !end if LONLAT
 
     subroutine polyfit_tend(fitTendCL,fitTendCR,pv,dh)
       real, intent(in ) :: pv(DOF)
