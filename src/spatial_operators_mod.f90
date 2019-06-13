@@ -40,19 +40,11 @@ MODULE spatial_operators_mod
       
       integer i,j,iPatch
       integer P1
-      
-#ifdef CUBE      
+        
       phiGu = stat%phiG * stat%contraU
       phiGv = stat%phiG * stat%contraV
       E     = stat%phi + mesh%phi_s + 0.5 * (stat%contraU * stat%u + stat%contraV * stat%v)
-#endif
-
-#ifdef LONLAT
-      phiGu = stat%phi * stat%u
-      phiGv = stat%phi * stat%v * mesh%cosy
-      E     = stat%phi + mesh%phi_s + 0.5 * (stat%u**2 + stat%v**2)
-#endif
-
+      
       ! calculate tend in x direction
       !$OMP PARALLEL DO PRIVATE(i,j,Ex,ux,phiGux,PhiGx,lambda_x)
       do iPatch = ifs, ife
@@ -67,8 +59,14 @@ MODULE spatial_operators_mod
             lambda_x(i) = eigenvalue_x(stat%contraU(i,j,iPatch),stat%phi(i,j,iPatch),mesh%matrixIG(:,:,i,j,iPatch))
           enddo
           
+#ifdef CUBE          
           call calc_tendP(flux_x(:,j,iPatch),Ex    ,ux   ,lambda_x)
           call calc_tendP(div_x (:,j,iPatch),phiGux,phiGx,lambda_x)
+#endif
+
+#ifdef LONLAT
+
+#endif
         enddo
       enddo
       !$OMP END PARALLEL DO
@@ -87,8 +85,14 @@ MODULE spatial_operators_mod
             lambda_y(j) = eigenvalue_y(stat%contraV(i,j,iPatch),stat%phi(i,j,iPatch),mesh%matrixIG(:,:,i,j,iPatch))
           enddo
           
+#ifdef CUBE
           call calc_tendP(flux_y(i,:,iPatch),Ey    ,vy   ,lambda_y)
           call calc_tendP(div_y (i,:,iPatch),phiGvy,phiGy,lambda_y)
+#endif
+
+#ifdef LONLAT
+
+#endif
         enddo
       enddo
       !$OMP END PARALLEL DO
@@ -115,6 +119,7 @@ MODULE spatial_operators_mod
       
     end subroutine spatial_operator
     
+#ifdef CUBE
     subroutine calc_tendP(tendP,f,q,eigenvalue)
       real   , intent(out) :: tendP     (ids:ide)
       real   , intent(in ) :: f         (ips:ipe)
@@ -165,7 +170,7 @@ MODULE spatial_operators_mod
       enddo
       
       ! Compute tend of inner point(s) on cells
-      if(DOF==3)then
+#ifdef MCV3
         ! For MCV3 only
         do iCell = 1, Nx
           P1    = pvIdx(1,iCell)
@@ -175,7 +180,9 @@ MODULE spatial_operators_mod
           fxVIA     = (f(P3) - f(P1)) / dx
           tendP(P2) = 1.5 * fxVIA - 0.25 * (tendP(P1) + tendP(P3))
         enddo
-      elseif(DOF==4)then
+#endif
+
+#ifdef MCV4
         ! For MCV4 only
         do iCell = 1, Nx
           P1    = pvIdx(1,iCell)
@@ -189,27 +196,196 @@ MODULE spatial_operators_mod
           tendP(P2) = 4./3. * fxVIA - (4. * tendP(P1) + 5. * tendP(P4)) / 27. - 4. / 27. * dx * fxxc
           tendP(P3) = 4./3. * fxVIA - (5. * tendP(P1) + 4. * tendP(P4)) / 27. + 4. / 27. * dx * fxxc
         enddo
-      endif
+#endif
       
       !tendP = -tendP
       
     end subroutine calc_tendP
+#endif
+
+#ifdef LONLAT
+    subroutine calc_tendP_x(tendP,f,q,eigenvalue)
+      real   , intent(out) :: tendP     (ids:ide)
+      real   , intent(in ) :: f         (ips:ipe)
+      real   , intent(in ) :: q         (ips:ipe)
+      real   , intent(in ) :: eigenvalue(ips:ipe)
+      
+      real fxL    (ics:ice)
+      real fxR    (ics:ice)
+      real qxL    (ics:ice)
+      real qxR    (ics:ice)
+      real fxL_fit(ics:ice)
+      real fxR_fit(ics:ice)
+      real qxL_fit(ics:ice)
+      real qxR_fit(ics:ice)
+      real fCell  (DOF)
+      real qCell  (DOF)
+      
+      real fxVIA       ! The 1st order derivative of f on cell
+      real fxxc        ! The 2nd order derivative of f
+      
+      real lambda_max  ! max eigenvalue
+      
+      integer P1,P2,P3,P4 ! points in cell
+      
+      integer iCell
+      
+      do iCell = ics, ice
+        fCell = f(pvIdx(:,iCell))
+        qCell = q(pvIdx(:,iCell))
+        
+        call polyfit_tend(fxL_fit(iCell),fxR_fit(iCell),fCell,dx)
+        call polyfit_tend(qxL_fit(iCell),qxR_fit(iCell),qCell,dx)
+      enddo
+      
+      do iCell = ils, ile
+        fxL(iCell) = fxR_fit(iCell-1)
+        fxR(iCell) = fxL_fit(iCell)
+        qxL(iCell) = qxR_fit(iCell-1)
+        qxR(iCell) = qxL_fit(iCell)
+        
+        P1         = pvIdx(1,iCell)
+        lambda_max = eigenvalue(P1)
+        !lambda_max = maxval(eigenvalue(P1-DOF+1:P1+DOF-1))
+        !lambda_max = maxval(eigenvalue)
+        call riemann_solver(tendP(P1),fxL(iCell),fxR(iCell),qxL(iCell),qxR(iCell),lambda_max)
+        
+        ! tendP(P4) = tendP(P1(iCell+1))
+      enddo
+      
+      ! Compute tend of inner point(s) on cells
+#ifdef MCV3
+        ! For MCV3 only
+        do iCell = 1, Nx
+          P1    = pvIdx(1,iCell)
+          P2    = pvIdx(2,iCell)
+          P3    = pvIdx(3,iCell)
+          
+          fxVIA     = (f(P3) - f(P1)) / dx
+          tendP(P2) = 1.5 * fxVIA - 0.25 * (tendP(P1) + tendP(P3))
+        enddo
+#endif
+
+#ifdef MCV4
+        ! For MCV4 only
+        do iCell = 1, Nx
+          P1    = pvIdx(1,iCell)
+          P2    = pvIdx(2,iCell)
+          P3    = pvIdx(3,iCell)
+          P4    = pvIdx(4,iCell)
+          
+          fxVIA = (f(P4) - f(P1)) / dx
+          fxxc  = 4.5 * ( f(P1) - f(P2) - f(P3) + f(P4) ) / (dx**2)
+          
+          tendP(P2) = 4./3. * fxVIA - (4. * tendP(P1) + 5. * tendP(P4)) / 27. - 4. / 27. * dx * fxxc
+          tendP(P3) = 4./3. * fxVIA - (5. * tendP(P1) + 4. * tendP(P4)) / 27. + 4. / 27. * dx * fxxc
+        enddo
+#endif
+      
+      !tendP = -tendP
+      
+    end subroutine calc_tendP_x
     
+    subroutine calc_tendP_y(tendP,f,q,eigenvalue)
+      real   , intent(out) :: tendP     (jds:jde)
+      real   , intent(in ) :: f         (jps:jpe)
+      real   , intent(in ) :: q         (jps:jpe)
+      real   , intent(in ) :: eigenvalue(jps:jpe)
+      
+      real fxL    (jcs:jce)
+      real fxR    (jcs:jce)
+      real qxL    (jcs:jce)
+      real qxR    (jcs:jce)
+      real fxL_fit(jcs:jce)
+      real fxR_fit(jcs:jce)
+      real qxL_fit(jcs:jce)
+      real qxR_fit(jcs:jce)
+      real fCell  (DOF)
+      real qCell  (DOF)
+      
+      real fxVIA       ! The 1st order derivative of f on cell
+      real fxxc        ! The 2nd order derivative of f
+      
+      real lambda_max  ! max eigenvalue
+      
+      integer P1,P2,P3,P4 ! points in cell
+      
+      integer iCell
+      
+      do iCell = 1, Ny
+        fCell = f(pvIdx(:,iCell))
+        qCell = q(pvIdx(:,iCell))
+        
+        call polyfit_tend(fxL_fit(iCell),fxR_fit(iCell),fCell,dx)
+        call polyfit_tend(qxL_fit(iCell),qxR_fit(iCell),qCell,dx)
+      enddo
+      
+      do iCell = 2, Ny
+        fxL(iCell) = fxR_fit(iCell-1)
+        fxR(iCell) = fxL_fit(iCell)
+        qxL(iCell) = qxR_fit(iCell-1)
+        qxR(iCell) = qxL_fit(iCell)
+        
+        P1         = pvIdx(1,iCell)
+        lambda_max = eigenvalue(P1)
+        !lambda_max = maxval(eigenvalue(P1-DOF+1:P1+DOF-1))
+        !lambda_max = maxval(eigenvalue)
+        call riemann_solver(tendP(P1),fxL(iCell),fxR(iCell),qxL(iCell),qxR(iCell),lambda_max)
+        
+        ! tendP(P4) = tendP(P1(iCell+1))
+      enddo
+      
+      ! Compute tend of inner point(s) on cells
+#ifdef MCV3
+        ! For MCV3 only
+        do iCell = 2, Ny-1
+          P1    = pvIdx(1,iCell)
+          P2    = pvIdx(2,iCell)
+          P3    = pvIdx(3,iCell)
+          
+          fxVIA     = (f(P3) - f(P1)) / dx
+          tendP(P2) = 1.5 * fxVIA - 0.25 * (tendP(P1) + tendP(P3))
+        enddo
+#endif
+
+#ifdef MCV4
+        ! For MCV4 only
+        do iCell = 2, Ny-1
+          P1    = pvIdx(1,iCell)
+          P2    = pvIdx(2,iCell)
+          P3    = pvIdx(3,iCell)
+          P4    = pvIdx(4,iCell)
+          
+          fxVIA = (f(P4) - f(P1)) / dx
+          fxxc  = 4.5 * ( f(P1) - f(P2) - f(P3) + f(P4) ) / (dx**2)
+          
+          tendP(P2) = 4./3. * fxVIA - (4. * tendP(P1) + 5. * tendP(P4)) / 27. - 4. / 27. * dx * fxxc
+          tendP(P3) = 4./3. * fxVIA - (5. * tendP(P1) + 4. * tendP(P4)) / 27. + 4. / 27. * dx * fxxc
+        enddo
+#endif
+      
+      !tendP = -tendP
+      
+    end subroutine calc_tendP_y
+#endif
+
     subroutine polyfit_tend(fitTendCL,fitTendCR,pv,dh)
       real, intent(in ) :: pv(DOF)
       real, intent(in ) :: dh
       real, intent(out) :: fitTendCL ! left side tend of the cell
       real, intent(out) :: fitTendCR ! right side tend of the cell
       
-      if(DOF==3)then
+#ifdef MCV3
         ! For MCV3 only
         fitTendCL = -( pv(3) - 4. * pv(2) + 3. * pv(1)) / dh
         fitTendCR =  ( pv(1) - 4. * pv(2) + 3. * pv(3)) / dh
-      elseif(DOF==4)then
+#endif
+
+#ifdef MCV4
         ! For MCV4 only
         fitTendCL = (-11. * pv(1) + 18. * pv(2) - 9. * pv(3) + 2. * pv(4))/(2. * dh);
         fitTendCR = ( 11. * pv(4) - 18. * pv(3) + 9. * pv(2) - 2. * pv(1))/(2. * dh);
-      endif
+#endif
     end subroutine polyfit_tend
     
     subroutine riemann_solver(tendP,fxL,fxR,qxL,qxR,eigenvalue)
@@ -275,16 +451,53 @@ MODULE spatial_operators_mod
         enddo
       enddo
       
+#ifdef CUBE
       do iPatch = ifs, ife
         do i = ids, ide
           if(DOF==3)call CD4(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jds,jde) ! For MCV3 only
           if(DOF==4)call CD6(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jds,jde) ! For MCV4 only
         enddo
       enddo
-      
+#endif
+
+#ifdef LONLAT
+      do iPatch = ifs, ife
+        do i = ids, ide
+          if(DOF==3)then
+            call CD2(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jds+1,jds+1) ! Nearest 1 Point to Sourth Pole
+            call CD2(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jde-1,jde-1) ! Nearest 1 Point to North Pole
+            call CD4(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jds+2,jde-2) ! For MCV3 only
+          endif
+          
+          if(DOF==4)then
+            call CD2(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jds+1,jds+1) ! Nearest 1 Point to Sourth Pole
+            call CD2(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jde-1,jde-1) ! Nearest 1 Point to North Pole
+            call CD4(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jds+2,jds+2) ! Nearest 2 Point to Sourth Pole
+            call CD4(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jde-2,jde-2) ! Nearest 2 Point to North Pole
+            call CD6(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jds+3,jde-3) ! For MCV4 only
+          endif
+        enddo
+      enddo
+#endif
+
       vorticity = (dvdx - dudy) / mesh%sqrtG(ids:ide,jds:jde,:)
       
     end subroutine calc_vorticity
+    
+    ! 2th-order center difference
+    subroutine CD2(dqdh,q,dh,ims,ime,its,ite)
+      integer, intent(in ) :: ims,ime,its,ite
+      real   , intent(in ) :: q   (ims:ime)
+      real   , intent(in ) :: dh
+      real   , intent(out) :: dqdh(its:ite)
+      
+      integer i
+      
+      do i = its, ite
+        dqdh(i) = (q(i+1) - q(i-1)) / 2. / dh
+      enddo
+    
+    end subroutine CD2
     
     ! 4th-order center difference
     subroutine CD4(dqdh,q,dh,ims,ime,its,ite)

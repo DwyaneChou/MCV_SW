@@ -181,7 +181,7 @@ contains
 #endif
 
 #ifdef LONLAT
-    matrixG(1,1) = 1.
+    matrixG(1,1) = cos(y)*cos(y)
     matrixG(2,2) = 1.
 #endif
 
@@ -213,7 +213,7 @@ contains
 #endif
 
 #ifdef LONLAT
-    matrixIG(1,1) = 1.
+    matrixIG(1,1) = 1./cos(y)/cos(y)
     matrixIG(2,2) = 1.
 #endif
 
@@ -234,11 +234,11 @@ contains
 
 #ifdef CUBE
     rho = sqrt(1 + tan(x)**2 + tan(y)**2)
-    jab = radius**2 /( cos(x)**2 * cos(y)**2 * rho**3 )
+    jab = radius**2 / ( cos(x)**2 * cos(y)**2 * rho**3 )
 #endif
 
 #ifdef LONLAT
-    jab = radius * cos(y)
+    jab = radius**2 * cos(y)
 #endif
 
     return
@@ -299,9 +299,10 @@ contains
 #endif
 
 #ifdef LONLAT
-    matrixIA(1,1) = 1.
+    matrixIA(1,1) = 1./cos(theta)
     matrixIA(2,2) = 1.
 #endif
+
     matrixIA = matrixIA/radius
           
     return
@@ -362,7 +363,7 @@ contains
 #endif
 
 #ifdef LONLAT
-    matrixA(1,1) = 1.
+    matrixA(1,1) = cos(theta)
     matrixA(2,2) = 1.
 #endif
 

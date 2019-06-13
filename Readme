@@ -2,8 +2,15 @@ Usage:
 
 Compilation:
    cd build
-   FC=gfortran cmake ..
+   FC=gfortran cmake .. -DMCV_ORDER=<order> -DMESH=<grid_type>
    make
+   
+order might be 3 or 4
+grid_type choosed from CUBE or LONLAT
+
+i.e.
+FC=gfortran cmake .. -DMCV_ORDER=4 -DMESH=CUBE
+
 Run:
    cd run
    ln -s ../build/MCV_SW.exe .
