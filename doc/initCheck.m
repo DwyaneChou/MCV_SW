@@ -11,10 +11,10 @@ ids=4;
 ide=364;
 jds=4;
 jde=184;
-it = 3;
+it = 1;
 
-phi1l  =        phi(:,jds:94,it);
-phi1u  = fliplr(phi(:,94:jde,it));
+phi1l  =        v(:,jds:94,it);
+phi1u  = -fliplr(v(:,94:jde,it));
 diff   = phi1l-phi1u;
 pcolor(diff')
 shading interp
