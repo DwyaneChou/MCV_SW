@@ -35,19 +35,19 @@
       call update_stat      (stat(two), stat(one), tend(one), 0.5 * dt)
       
       call addFillValue(stat(two)) ! add fill value for output
-      call history_write_stat(stat(two),2)
+      call history_write_tend(tend(one),2)
       
       call spatial_operator (stat(two), tend(two))
       call update_stat      (stat(three), stat(one), tend(two), 0.5 * dt)
       
       call addFillValue(stat(three)) ! add fill value for output
-      call history_write_stat(stat(three),3)
+      call history_write_tend(tend(two),3)
       
       call spatial_operator (stat(three), tend(three))
       call update_stat      (stat(four), stat(one), tend(three), dt)
       
       call addFillValue(stat(four)) ! add fill value for output
-      call history_write_stat(stat(four),4)
+      call history_write_tend(tend(three),4)
       
       call spatial_operator(stat(four), tend(four))
       
@@ -58,7 +58,7 @@
       call update_stat      (stat_new, stat_old, tend(new), dt)
       
       call addFillValue(stat_new) ! add fill value for output
-      call history_write_stat(stat_new,5)
+      call history_write_tend(tend(new),5)
       stop
       
     end subroutine RK4

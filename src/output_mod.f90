@@ -4,6 +4,7 @@ module output_mod
   use parameters_mod
   use mesh_mod
   use stat_mod
+  use tend_mod
   use projection_mod
   implicit none
     
@@ -135,6 +136,50 @@ module output_mod
       if(status/=nf90_noerr) call handle_err(status)
       
     end subroutine history_write_stat
+    
+    subroutine history_write_tend(tend,time_slot_num)
+      type(tend_field), intent(in) :: tend
+      integer         , intent(in) :: time_slot_num
+      
+      integer status
+      integer ncid
+      integer time_id
+      integer u_id,v_id
+      integer zonal_wind_id,meridional_wind_id
+      integer phi_id
+      
+      integer :: time(1)
+      
+      integer i,j,iPatch
+      
+      time(1) = time_slot_num
+      !print*,'nf90_open'
+      status = nf90_open(ncFile,NF90_WRITE,ncid)
+      if(status/=nf90_noerr) call handle_err(status)
+      
+      !print*,'nf90_inq_varid'
+      status = nf90_inq_varid(ncid,'time'           , time_id           )
+      status = nf90_inq_varid(ncid,'uP'             , u_id              )
+      status = nf90_inq_varid(ncid,'vP'             , v_id              )
+      status = nf90_inq_varid(ncid,'zonal_wind'     , zonal_wind_id     )
+      status = nf90_inq_varid(ncid,'meridional_wind', meridional_wind_id)
+      status = nf90_inq_varid(ncid,'phiP'           , phi_id            )
+      if(status/=nf90_noerr) call handle_err(status)
+      
+      !print*,'nf90_put_var'
+      status = nf90_put_var(ncid,time_id           ,time                ,start=(/      time_slot_num/),count=(/                       1/))
+      status = nf90_put_var(ncid,u_id              ,tend%u              ,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
+      status = nf90_put_var(ncid,v_id              ,tend%v              ,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
+      !status = nf90_put_var(ncid,zonal_wind_id     ,tend%zonal_wind     ,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
+      !status = nf90_put_var(ncid,meridional_wind_id,tend%meridional_wind,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
+      status = nf90_put_var(ncid,phi_id            ,tend%phiG           ,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
+      if(status/=nf90_noerr) call handle_err(status)
+      
+      !print*,'nf90_close'
+      status = nf90_close(ncid)
+      if(status/=nf90_noerr) call handle_err(status)
+      
+    end subroutine history_write_tend
     
     subroutine handle_err(status)
       implicit none

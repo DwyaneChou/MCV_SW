@@ -106,10 +106,8 @@ MODULE spatial_operators_mod
       tend%v    = -flux_y - mesh%sqrtG(ids:ide,jds:jde,:) * (vorticity + mesh%f(ids:ide,jds:jde,:)) * stat%contraU(ids:ide,jds:jde,:)
       
 #ifdef LONLAT
-      !tend%phiG(ids:ide,jds,:) = sum(tend%phiG(ids:ide,jds,:)) / nPVx
-      !tend%phiG(ids:ide,jde,:) = sum(tend%phiG(ids:ide,jde,:)) / nPVx
-      tend%phiG(ids:ide,jds,:) = sum(radius * mesh%cosy(ids:ide,jds+1,:) * dx / (DOF - 1) * stat%v(ids:ide,jds+1,:)) / (radius**2 * 2. * pi * sin(dy/(DOF - 1)))
-      tend%phiG(ids:ide,jde,:) = sum(radius * mesh%cosy(ids:ide,jde-1,:) * dx / (DOF - 1) * stat%v(ids:ide,jde-1,:)) / (radius**2 * 2. * pi * sin(dy/(DOF - 1)))
+      tend%phiG(ids:ide,jds,:) = sum(radius * mesh%cosy(ids:ide,jds+1,:) * dx / (DOF - 1) * stat%v(ids:ide,jds+1,:)) / (radius**2 * 2. * pi * (mesh%siny(ids:ide,jds+1,:) - mesh%siny(ids:ide,jds  ,:)) )
+      tend%phiG(ids:ide,jde,:) = sum(radius * mesh%cosy(ids:ide,jde-1,:) * dx / (DOF - 1) * stat%v(ids:ide,jde-1,:)) / (radius**2 * 2. * pi * (mesh%siny(ids:ide,jde  ,:) - mesh%siny(ids:ide,jde-1,:)) )
       tend%u   (:,jds,:) = 0.
       tend%u   (:,jde,:) = 0.
       tend%v   (:,jds,:) = 0.
@@ -488,19 +486,19 @@ MODULE spatial_operators_mod
 #ifdef LONLAT
       do iPatch = ifs, ife
         do i = ids, ide
-          if(DOF==3)then
+#ifdef MCV3
             call CD2(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jds+1,jds+1) ! Nearest 1 Point to Sourth Pole
             call CD2(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jde-1,jde-1) ! Nearest 1 Point to North Pole
             call CD4(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jds+2,jde-2) ! For MCV3 only
-          endif
+#endif
           
-          if(DOF==4)then
+#ifdef MCV4
             call CD2(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jds+1,jds+1) ! Nearest 1 Point to Sourth Pole
             call CD2(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jde-1,jde-1) ! Nearest 1 Point to North Pole
             call CD4(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jds+2,jds+2) ! Nearest 2 Point to Sourth Pole
             call CD4(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jde-2,jde-2) ! Nearest 2 Point to North Pole
             call CD6(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jds+3,jde-3) ! For MCV4 only
-          endif
+#endif
         enddo
       enddo
 #endif
@@ -508,8 +506,8 @@ MODULE spatial_operators_mod
       vorticity = (dvdx - dudy) / mesh%sqrtG(ids:ide,jds:jde,:)
       
 #ifdef LONLAT
-      vorticity(ids:ide,jds,:) = sum(u(ids:ide,jds+1,:) * radius * dx / (DOF - 1)) / ( radius**2 * 2. * pi * sin(dy/(DOF-1)) ) / mesh%sqrtG(ids:ide,jds+1,:) * 4.
-      vorticity(ids:ide,jde,:) = sum(u(ids:ide,jde-1,:) * radius * dx / (DOF - 1)) / ( radius**2 * 2. * pi * sin(dy/(DOF-1)) ) / mesh%sqrtG(ids:ide,jde-1,:) * 4.
+      vorticity(ids:ide,jds,:) = sum(u(ids:ide,jds+1,:) * dx / (DOF - 1)) / ( 2. * pi * radius * dy / (DOF - 1))
+      vorticity(ids:ide,jde,:) = sum(u(ids:ide,jde-1,:) * dx / (DOF - 1)) / ( 2. * pi * radius * dy / (DOF - 1))
 #endif
     !print*,'vorticity on pole : ',vorticity(1,jds,:),vorticity(1,jde,:)
     end subroutine calc_vorticity
