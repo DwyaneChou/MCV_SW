@@ -45,45 +45,49 @@ MODULE spatial_operators_mod
       phiGv = stat%phiG * stat%contraV
       E     = stat%phi + mesh%phi_s + 0.5 * (stat%contraU * stat%u + stat%contraV * stat%v)
       
-      ! calculate tend in x direction
-      !$OMP PARALLEL DO PRIVATE(i,j,Ex,ux,phiGux,PhiGx,lambda_x)
-      do iPatch = ifs, ife
-        do j = jds, jde
-          Ex    = E        (:,j,iPatch)
-          ux    = stat%u   (:,j,iPatch)
-          phiGux= phiGu    (:,j,iPatch)
-          phiGx = stat%phiG(:,j,iPatch)
-          
-          do i = ips, ipe
-            !P1          = pvIdx(1,i)
-            lambda_x(i) = eigenvalue_x(stat%contraU(i,j,iPatch),stat%phi(i,j,iPatch),mesh%matrixIG(:,:,i,j,iPatch))
+      !$OMP PARALLEL SECTIONS PRIVATE(iPatch)
+      !$OMP SECTION
+        ! calculate tend in x direction
+        !$OMP PARALLEL DO PRIVATE(i,j,Ex,ux,phiGux,PhiGx,lambda_x)
+        do iPatch = ifs, ife
+          do j = jds, jde
+            Ex    = E        (:,j,iPatch)
+            ux    = stat%u   (:,j,iPatch)
+            phiGux= phiGu    (:,j,iPatch)
+            phiGx = stat%phiG(:,j,iPatch)
+            
+            do i = ips, ipe
+              !P1          = pvIdx(1,i)
+              lambda_x(i) = eigenvalue_x(stat%contraU(i,j,iPatch),stat%phi(i,j,iPatch),mesh%matrixIG(:,:,i,j,iPatch))
+            enddo
+            
+            call calc_tendP(flux_x(:,j,iPatch),Ex    ,ux   ,lambda_x)
+            call calc_tendP(div_x (:,j,iPatch),phiGux,phiGx,lambda_x)
           enddo
-          
-          call calc_tendP(flux_x(:,j,iPatch),Ex    ,ux   ,lambda_x)
-          call calc_tendP(div_x (:,j,iPatch),phiGux,phiGx,lambda_x)
         enddo
-      enddo
-      !$OMP END PARALLEL DO
+        !$OMP END PARALLEL DO
       
-      ! calculate tend in y direction
-      !$OMP PARALLEL DO PRIVATE(i,j,Ey,vy,phiGvy,PhiGy,lambda_y)
-      do iPatch = ifs, ife
-        do i = ids, ide
-          Ey     = E        (i,:,iPatch)
-          vy     = stat%v   (i,:,iPatch)
-          phiGvy = phiGv    (i,:,iPatch)
-          phiGy  = stat%phiG(i,:,iPatch)
-          
-          do j = jps, jpe
-            !P1          = pvIdx(1,j)
-            lambda_y(j) = eigenvalue_y(stat%contraV(i,j,iPatch),stat%phi(i,j,iPatch),mesh%matrixIG(:,:,i,j,iPatch))
+      !$OMP SECTION
+        ! calculate tend in y direction
+        !$OMP PARALLEL DO PRIVATE(i,j,Ey,vy,phiGvy,PhiGy,lambda_y)
+        do iPatch = ifs, ife
+          do i = ids, ide
+            Ey     = E        (i,:,iPatch)
+            vy     = stat%v   (i,:,iPatch)
+            phiGvy = phiGv    (i,:,iPatch)
+            phiGy  = stat%phiG(i,:,iPatch)
+            
+            do j = jps, jpe
+              !P1          = pvIdx(1,j)
+              lambda_y(j) = eigenvalue_y(stat%contraV(i,j,iPatch),stat%phi(i,j,iPatch),mesh%matrixIG(:,:,i,j,iPatch))
+            enddo
+            
+            call calc_tendP(flux_y(i,:,iPatch),Ey    ,vy   ,lambda_y)
+            call calc_tendP(div_y (i,:,iPatch),phiGvy,phiGy,lambda_y)
           enddo
-          
-          call calc_tendP(flux_y(i,:,iPatch),Ey    ,vy   ,lambda_y)
-          call calc_tendP(div_y (i,:,iPatch),phiGvy,phiGy,lambda_y)
         enddo
-      enddo
-      !$OMP END PARALLEL DO
+        !$OMP END PARALLEL DO
+      !$OMP END PARALLEL SECTIONS
       
       call calc_vorticity(vorticity,stat%u,stat%v)
       
@@ -157,31 +161,32 @@ MODULE spatial_operators_mod
       enddo
       
       ! Compute tend of inner point(s) on cells
-      if(DOF==3)then
-        ! For MCV3 only
-        do iCell = 1, Nx
-          P1    = pvIdx(1,iCell)
-          P2    = pvIdx(2,iCell)
-          P3    = pvIdx(3,iCell)
-          
-          fxVIA     = (f(P3) - f(P1)) / dx
-          tendP(P2) = 1.5 * fxVIA - 0.25 * (tendP(P1) + tendP(P3))
-        enddo
-      elseif(DOF==4)then
-        ! For MCV4 only
-        do iCell = 1, Nx
-          P1    = pvIdx(1,iCell)
-          P2    = pvIdx(2,iCell)
-          P3    = pvIdx(3,iCell)
-          P4    = pvIdx(4,iCell)
-          
-          fxVIA = (f(P4) - f(P1)) / dx
-          fxxc  = 4.5 * ( f(P1) - f(P2) - f(P3) + f(P4) ) / (dx**2)
-          
-          tendP(P2) = 4./3. * fxVIA - (4. * tendP(P1) + 5. * tendP(P4)) / 27. - 4. / 27. * dx * fxxc
-          tendP(P3) = 4./3. * fxVIA - (5. * tendP(P1) + 4. * tendP(P4)) / 27. + 4. / 27. * dx * fxxc
-        enddo
-      endif
+#    ifdef MCV3
+      ! For MCV3 only
+      do iCell = 1, Nx
+        P1    = pvIdx(1,iCell)
+        P2    = pvIdx(2,iCell)
+        P3    = pvIdx(3,iCell)
+        
+        fxVIA     = (f(P3) - f(P1)) / dx
+        tendP(P2) = 1.5 * fxVIA - 0.25 * (tendP(P1) + tendP(P3))
+      enddo
+#    endif
+#    ifdef MCV4
+      ! For MCV4 only
+      do iCell = 1, Nx
+        P1    = pvIdx(1,iCell)
+        P2    = pvIdx(2,iCell)
+        P3    = pvIdx(3,iCell)
+        P4    = pvIdx(4,iCell)
+        
+        fxVIA = (f(P4) - f(P1)) / dx
+        fxxc  = 4.5 * ( f(P1) - f(P2) - f(P3) + f(P4) ) / (dx**2)
+        
+        tendP(P2) = 4./3. * fxVIA - (4. * tendP(P1) + 5. * tendP(P4)) / 27. - 4. / 27. * dx * fxxc
+        tendP(P3) = 4./3. * fxVIA - (5. * tendP(P1) + 4. * tendP(P4)) / 27. + 4. / 27. * dx * fxxc
+      enddo
+#    endif
       
       !tendP = -tendP
       
@@ -193,15 +198,17 @@ MODULE spatial_operators_mod
       real, intent(out) :: fitTendCL ! left side tend of the cell
       real, intent(out) :: fitTendCR ! right side tend of the cell
       
-      if(DOF==3)then
-        ! For MCV3 only
-        fitTendCL = -( pv(3) - 4. * pv(2) + 3. * pv(1)) / dh
-        fitTendCR =  ( pv(1) - 4. * pv(2) + 3. * pv(3)) / dh
-      elseif(DOF==4)then
-        ! For MCV4 only
-        fitTendCL = (-11. * pv(1) + 18. * pv(2) - 9. * pv(3) + 2. * pv(4))/(2. * dh);
-        fitTendCR = ( 11. * pv(4) - 18. * pv(3) + 9. * pv(2) - 2. * pv(1))/(2. * dh);
-      endif
+#    ifdef MCV3
+      ! For MCV3 only
+      fitTendCL = -( pv(3) - 4. * pv(2) + 3. * pv(1)) / dh
+      fitTendCR =  ( pv(1) - 4. * pv(2) + 3. * pv(3)) / dh
+#    endif
+
+#    ifdef MCV4
+      ! For MCV4 only
+      fitTendCL = (-11. * pv(1) + 18. * pv(2) - 9. * pv(3) + 2. * pv(4))/(2. * dh);
+      fitTendCR = ( 11. * pv(4) - 18. * pv(3) + 9. * pv(2) - 2. * pv(1))/(2. * dh);
+#    endif
     end subroutine polyfit_tend
     
     subroutine riemann_solver(tendP,fxL,fxR,qxL,qxR,eigenvalue)
@@ -260,30 +267,46 @@ MODULE spatial_operators_mod
       
       integer i,j,iPatch
       
-      do iPatch = ifs, ife
-        do j = jds, jde
-          if(DOF==3)call CD4(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ips,ipe,ids,ide) ! For MCV3 only
-          if(DOF==4)call CD6(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ips,ipe,ids,ide) ! For MCV4 only
+      !$OMP PARALLEL SECTIONS PRIVATE(iPatch)
+      !$OMP SECTION
+        !$OMP PARALLEL DO PRIVATE(j)
+        do iPatch = ifs, ife
+          do j = jds, jde
+#          ifdef MCV3            
+            call CD4(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ids,ide,ips,ipe) ! For MCV3 only
+#          endif
+#          ifdef MCV4
+            call CD6(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ids,ide,ips,ipe) ! For MCV4 only
+#          endif
+          enddo
         enddo
-      enddo
+        !$OMP END PARALLEL DO
       
-      do iPatch = ifs, ife
-        do i = ids, ide
-          if(DOF==3)call CD4(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jds,jde) ! For MCV3 only
-          if(DOF==4)call CD6(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jps,jpe,jds,jde) ! For MCV4 only
+      !$OMP SECTION
+        !$OMP PARALLEL DO PRIVATE(j)
+        do iPatch = ifs, ife
+          do i = ids ,ide
+#          ifdef MCV3 
+            call CD4(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jds,jde,jps,jpe) ! For MCV3 only
+#          endif
+#          ifdef MCV4
+            call CD6(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jds,jde,jps,jpe) ! For MCV4 only
+#          endif
+          enddo
         enddo
-      enddo
+        !$OMP END PARALLEL DO
+      !$OMP END PARALLEL SECTIONS
       
       vorticity = (dvdx - dudy) / mesh%sqrtG(ids:ide,jds:jde,:)
       
     end subroutine calc_vorticity
     
     ! 4th-order center difference
-    subroutine CD4(dqdh,q,dh,ims,ime,its,ite)
-      integer, intent(in ) :: ims,ime,its,ite
+    subroutine CD4(dqdh,q,dh,its,ite,ims,ime)
+      real   , intent(out) :: dqdh(its:ite)
       real   , intent(in ) :: q   (ims:ime)
       real   , intent(in ) :: dh
-      real   , intent(out) :: dqdh(its:ite)
+      integer, intent(in ) :: its,ite,ims,ime
       
       integer i
       
@@ -294,11 +317,11 @@ MODULE spatial_operators_mod
     end subroutine CD4
   
     ! 6th-order center difference
-    subroutine CD6(dqdh,q,dh,ims,ime,its,ite)
-      integer, intent(in ) :: ims,ime,its,ite
+    subroutine CD6(dqdh,q,dh,its,ite,ims,ime)
+      real   , intent(out) :: dqdh(its:ite)
       real   , intent(in ) :: q   (ims:ime)
       real   , intent(in ) :: dh
-      real   , intent(out) :: dqdh(its:ite)
+      integer, intent(in ) :: its,ite,ims,ime
       
       integer i
       
@@ -422,6 +445,7 @@ MODULE spatial_operators_mod
       
       integer i,j,iPatch
       
+      !$OMP PARALLEL DO PRIVATE(i,j)
       do iPatch = ifs, ife
         do j = jps, jpe
           do i = ips, ipe
@@ -429,7 +453,7 @@ MODULE spatial_operators_mod
           enddo
         enddo
       enddo
-    
+      !$OMP END PARALLEL DO
     end subroutine convert_wind_P2SP
     
     subroutine convert_wind_SP2P(stat)
@@ -437,6 +461,7 @@ MODULE spatial_operators_mod
       
       integer i,j,iPatch
       
+      !$OMP PARALLEL DO PRIVATE(i,j)
       do iPatch = ifs, ife
         do j = jps, jpe
           do i = ips, ipe
@@ -444,7 +469,7 @@ MODULE spatial_operators_mod
           enddo
         enddo
       enddo
-    
+      !$OMP END PARALLEL DO
     end subroutine convert_wind_SP2P
     
     subroutine convert_wind_cov2contrav(stat)
@@ -452,6 +477,7 @@ MODULE spatial_operators_mod
       
       integer i,j,iPatch
       
+      !$OMP PARALLEL DO PRIVATE(i,j)
       do iPatch = ifs, ife
         do j = jps, jpe
           do i = ips, ipe
@@ -459,6 +485,7 @@ MODULE spatial_operators_mod
           enddo
         enddo
       enddo
+      !$OMP END PARALLEL DO
     end subroutine convert_wind_cov2contrav
     
 END MODULE spatial_operators_mod

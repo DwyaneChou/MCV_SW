@@ -45,20 +45,28 @@ add_subdirectory(lib/fiona)
 
 add_subdirectory(lib/datetime)
 
+if (MCV_ORDER MATCHES 3)
+  #add_compile_definitions("-DMCV3")
+  add_definitions("-DMCV3")
+elseif (MCV_ORDER MATCHES 4)
+  #add_compile_definitions("-DMCV4")
+  add_definitions("-DMCV4")
+endif ()
+
 set(source_files
-  src/MCV_SW.f90
-  src/constants_mod.f90
-  src/parameters_mod.f90
-  src/mesh_mod.f90
-  src/stat_mod.f90
-  src/tend_mod.f90
-  src/projection_mod.f90
-  src/ghost_mod.f90
-  src/test_case_mod.f90
-  src/spatial_operators_mod.f90
-  src/time_scheme_mod.f90
-  src/diag_mod.f90
-  src/output_mod.f90
+  src/MCV_SW.F90
+  src/constants_mod.F90
+  src/parameters_mod.F90
+  src/mesh_mod.F90
+  src/stat_mod.F90
+  src/tend_mod.F90
+  src/projection_mod.F90
+  src/ghost_mod.F90
+  src/test_case_mod.F90
+  src/spatial_operators_mod.F90
+  src/time_scheme_mod.F90
+  src/diag_mod.F90
+  src/output_mod.F90
 )
 
 add_library(MCV_SW ${source_files})

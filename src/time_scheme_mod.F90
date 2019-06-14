@@ -22,14 +22,7 @@
       integer, parameter :: three = -3
       integer, parameter :: four  = -4
       
-      stat(one)%phi             = stat_old%phi
-      stat(one)%phiG            = stat_old%phiG
-      stat(one)%u               = stat_old%u
-      stat(one)%v               = stat_old%v
-      stat(one)%contraU         = stat_old%contraU
-      stat(one)%contraV         = stat_old%contraV
-      stat(one)%zonal_wind      = stat_old%zonal_wind
-      stat(one)%meridional_wind = stat_old%meridional_wind
+      call copyStat(stat(one),stat_old)
       
       call spatial_operator (stat(one), tend(one))
       call update_stat      (stat(two), stat(one), tend(one), 0.5 * dt)
@@ -62,14 +55,7 @@
       integer, parameter :: three = -3
       integer, parameter :: four  = -4
       
-      stat(one)%phi             = stat_old%phi
-      stat(one)%phiG            = stat_old%phiG
-      stat(one)%u               = stat_old%u
-      stat(one)%v               = stat_old%v
-      stat(one)%contraU         = stat_old%contraU
-      stat(one)%contraV         = stat_old%contraV
-      stat(one)%zonal_wind      = stat_old%zonal_wind
-      stat(one)%meridional_wind = stat_old%meridional_wind
+      call copyStat(stat(one),stat_old)
       
       call spatial_operator (stat(one), tend(one))
       call update_stat      (stat(two), stat(one), tend(one), dt)
@@ -155,6 +141,7 @@
       call unify_bdy_stat          (stat)
       call convert_wind_SP2P       (stat)
       call convert_wind_cov2contrav(stat)
+      
     end subroutine correct_bdy_ghost
     
   end module time_scheme_mod

@@ -15,6 +15,10 @@ MODULE ghost_mod
     real   , dimension(:,:), allocatable :: Y     ! Y coordinate of ghost points, not needed in interpolation
     real   , dimension(:,:), allocatable :: coef  ! Position in cell
     integer, dimension(:,:), allocatable :: iref  ! Index of reference point
+    
+    integer, dimension(:,:      ), allocatable :: irefC   ! reference cell index on x direction
+    integer, dimension(:,:      ), allocatable :: jrefC   ! reference cell index on y direction
+    real   , dimension(:,:,:,:,:), allocatable :: rctCoef
   end type ghostLocation
   
   type(ghostLocation) :: ghost
@@ -223,6 +227,28 @@ MODULE ghost_mod
     endif
     
   end subroutine linear_interp
+  
+  subroutine reconstruct_interp(dest,src)
+  
+  end subroutine reconstruct_interp
+  
+  subroutine reconstruct_coef(coef,f)
+    real, intent(out) :: coef(0:DOF-1,0:DOF-1)
+    real, intent(in ) :: f   (0:DOF-1,0:DOF-1)
+    
+#  ifdef MCV3    
+    coef(0,0) = f(0,0)
+    coef(1,0) = (-3. * f(0,0) + 4. * f(1,0) - f(2,0)) / dx
+    coef(2,0) = (f(0,0) - 2. * f(1,0) + f(2,0)) * 2. / dx**2
+    coef(0,1) = (-3. * f(0,0) + 4. * f(0,1) - f(0,2)) / dy
+    coef(0,2) = (f(0,0) - 2. * f(0,1) + f(0,2)) * 2. / dy**2
+    coef(1,1) = (4. * f(0,0) - 8. * f(0,1) + f(0,2) - 8. * f(1,0) - 4. * f(1,2) + f(2,0) - 4. * f(2,1) + 18. * f(1,1)) * 2. / (dx * dy)
+    coef(2,1) = (-5. * f(0,0) + 12. * f(0,1) - f(0,2) + 16. * f(1,0) + 8. * f(1,2) - 5. * f(2,0) + 12. * f(2,1) - f(2,2) - 36. * f(1,1)) / (dx**2 * dy)
+    coef(1,2) = (-5. * f(0,0) + 16. * f(0,1) - 5. * f(0,2) + 12. * f(1,0) + 12. * f(1,2) - f(2,0) + 8. * f(2,1) - f(2,2) - 36. * f(1,1)) / (dx * dy**2)
+    coef(2,2) = (f(0,0) - 4. * f(0,1) + f(0,2) - 4. * f(1,0) - 4. * f(1,2) + f(2,0) - 4. * f(2,1) + f(2,2) + 12. * f(1,1)) * 3. / (dy**2 * dy**2)
+#  endif    
+  
+  end subroutine reconstruct_coef
   
   ! Fill up halo with ghost points  
   subroutine fill_ghost(stat)

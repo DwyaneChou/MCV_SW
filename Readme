@@ -2,8 +2,13 @@ Usage:
 
 Compilation:
    cd build
-   FC=gfortran cmake ..
-   make
+   FC=gfortran cmake .. -DMCV_ORDER=<order>
+   make -j 8
+   
+i.e
+   FC=gfortran cmake .. -DMCV_ORDER=4
+   The model will be configured as 4th order MCV scheme
+   
 Run:
    cd run
    ln -s ../build/MCV_SW.exe .

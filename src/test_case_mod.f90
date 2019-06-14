@@ -10,6 +10,8 @@ module test_case_mod
   contains
     
   subroutine initTestCase
+    integer i,j,iPatch
+    
     if(case_num == 2)then
       print*,''
       print*,'test case 2 is selected'
@@ -20,6 +22,17 @@ module test_case_mod
       call case6(stat(0))
     endif
     
+    stat(0)%phiG = stat(0)%phi * mesh%sqrtG
+    
+    do iPatch = ifs, ife
+      do j = jps, jpe
+        do i = ips, ipe
+          call covProjSphere2Plane    (stat(0)%u      (i,j,iPatch), stat(0)%v      (i,j,iPatch), stat(0)%zonal_wind(i,j,iPatch), stat(0)%meridional_wind(i,j,iPatch), mesh%matrixIA(:,:,i,j,iPatch), mesh%matrixG(:,:,i,j,iPatch))
+          call contravProjSphere2Plane(stat(0)%contraU(i,j,iPatch), stat(0)%contraV(i,j,iPatch), stat(0)%zonal_wind(i,j,iPatch), stat(0)%meridional_wind(i,j,iPatch), mesh%matrixIA(:,:,i,j,iPatch))
+        enddo
+      enddo
+    enddo
+    
     print*,''
     print*,'max/min value of u   : ',maxval(stat(0)%u  ),minval(stat(0)%u  )
     print*,'max/min value of v   : ',maxval(stat(0)%v  ),minval(stat(0)%v  )
@@ -29,32 +42,33 @@ module test_case_mod
   ! Global steady flow
   subroutine case2(stat)
     type(stat_field), intent(inout) :: stat
+    real,dimension(ips:ipe,jps:jpe,ifs:ife) :: u,v,phi                 ! working array
+    
     real    :: u0
     real    :: gh0 = 29400.
     real    :: gh
-    real    :: u, v
     
     integer :: i,j,iPatch
     
-    stat%meridional_wind = 0.
-    
     u0 = 2. * pi * radius / (12. * 86400.)
+    
     do iPatch = ifs, ife
       do j = jps, jpe
         do i = ips, ipe
-          stat%phi(i,j,iPatch) = gh0 - (radius * Omega * u0 + u0**2 / 2.) * sin(mesh%latP(i,j,iPatch))**2
-          
-          stat%zonal_wind(i,j,iPatch) = u0 * cos(mesh%latP(i,j,iPatch))
-          
-          call covProjSphere2Plane    (stat%u      (i,j,iPatch), stat%v      (i,j,iPatch), stat%zonal_wind(i,j,iPatch), stat%meridional_wind(i,j,iPatch), mesh%matrixIA(:,:,i,j,iPatch), mesh%matrixG(:,:,i,j,iPatch))
-          call contravProjSphere2Plane(stat%contraU(i,j,iPatch), stat%contraV(i,j,iPatch), stat%zonal_wind(i,j,iPatch), stat%meridional_wind(i,j,iPatch), mesh%matrixIA(:,:,i,j,iPatch))
+          phi(i,j,iPatch) = gh0 - (radius * Omega * u0 + u0**2 / 2.) * sin(mesh%latP(i,j,iPatch))**2
+          u  (i,j,iPatch) = u0 * cos(mesh%latP(i,j,iPatch))
         enddo
       enddo
     enddo
     
-    stat%phiG = stat%phi * mesh%sqrtG
+    v = 0.
+    
+    stat%zonal_wind      = u
+    stat%meridional_wind = v
+    stat%phi             = phi
     
     mesh%phi_s = 0.
+    
   end subroutine case2
   
   ! Rossby-Haurwitz wave with wavenumber 4
@@ -114,16 +128,6 @@ module test_case_mod
     stat%zonal_wind      = u
     stat%meridional_wind = v
     stat%phi             = phi
-    stat%phiG            = stat%phi * mesh%sqrtG
-    
-    do iPatch = ifs, ife
-      do j = jps, jpe
-        do i = ips, ipe
-          call covProjSphere2Plane    (stat%u      (i,j,iPatch), stat%v      (i,j,iPatch), stat%zonal_wind(i,j,iPatch), stat%meridional_wind(i,j,iPatch), mesh%matrixIA(:,:,i,j,iPatch), mesh%matrixG(:,:,i,j,iPatch))
-          call contravProjSphere2Plane(stat%contraU(i,j,iPatch), stat%contraV(i,j,iPatch), stat%zonal_wind(i,j,iPatch), stat%meridional_wind(i,j,iPatch), mesh%matrixIA(:,:,i,j,iPatch))
-        enddo
-      enddo
-    enddo
     
     mesh%phi_s = 0.
   end subroutine case6

@@ -5,14 +5,12 @@ MODULE stat_mod
   
   ! MCV basic definiton
   type stat_field
-    real, dimension(:,:,:), allocatable :: u    ! covariant wind on x direction on points
-    real, dimension(:,:,:), allocatable :: v    ! covariant wind on y direction on points
-    real, dimension(:,:,:), allocatable :: phi  ! geopotential height on points
-    real, dimension(:,:,:), allocatable :: phiG ! phi * sqrtG on points
-    
+    real, dimension(:,:,:), allocatable :: u                ! covariant wind on x direction on points
+    real, dimension(:,:,:), allocatable :: v                ! covariant wind on y direction on points
+    real, dimension(:,:,:), allocatable :: phi              ! geopotential height on points
+    real, dimension(:,:,:), allocatable :: phiG             ! phi * sqrtG on points
     real, dimension(:,:,:), allocatable :: contraU
     real, dimension(:,:,:), allocatable :: contraV
-    
     real, dimension(:,:,:), allocatable :: zonal_wind
     real, dimension(:,:,:), allocatable :: meridional_wind
   end type stat_field
@@ -40,6 +38,20 @@ MODULE stat_mod
     enddo
     
   end subroutine initStat
+  
+  subroutine copyStat(stat_out,stat_in)
+    type(stat_field),intent(out) :: stat_out
+    type(stat_field),intent(in ) :: stat_in
+  
+    stat_out%u               = stat_in%u              
+    stat_out%v               = stat_in%v              
+    stat_out%phi             = stat_in%phi            
+    stat_out%phiG            = stat_in%phiG           
+    stat_out%contraU         = stat_in%contraU
+    stat_out%contraV         = stat_in%contraV
+    stat_out%zonal_wind      = stat_in%zonal_wind
+    stat_out%meridional_wind = stat_in%meridional_wind
+  end subroutine copyStat
   
 END MODULE stat_mod
 

@@ -45,7 +45,6 @@
       print*,'Temporal integration scheme is '//trim(adjustl(integral_scheme))
       print*,''
       
-      ! time integration
       output_idx       = 0
       total_output_num = nsteps * dt / history_interval
       call history_init      (stat(old))
@@ -54,10 +53,12 @@
       call calc_total_energy (total_energy0,stat(old))
       print*,'output index/total, MCR, ECR :',output_idx,'/',total_output_num,' ',0., 0.
       
+      ! time integration
       do it = 1,nsteps
         if(trim(adjustl(integral_scheme))=='RK3_TVD')call RK3_TVD(stat(new),stat(old))
         if(trim(adjustl(integral_scheme))=='RK4'    )call RK4    (stat(new),stat(old))
         
+        ! Write output
         if(mod(it*dt,float(history_interval))==0.and.(it*dt>=history_interval))then
           output_idx = output_idx + 1
           call addFillValue(stat(new))
