@@ -152,8 +152,8 @@ MODULE spatial_operators_mod
         qxR(iCell) = qxL_fit(iCell)
         
         P1         = pvIdx(1,iCell)
-        lambda_max = eigenvalue(P1)
-        !lambda_max = maxval(eigenvalue(P1-DOF+1:P1+DOF-1))
+        !lambda_max = eigenvalue(P1)
+        lambda_max = maxval(eigenvalue(P1-DOF+1:P1+DOF-1))
         !lambda_max = maxval(eigenvalue)
         call riemann_solver(tendP(P1),fxL(iCell),fxR(iCell),qxL(iCell),qxR(iCell),lambda_max)
         
@@ -219,7 +219,7 @@ MODULE spatial_operators_mod
       real, intent(in ) :: eigenvalue
       real, intent(out) :: tendP
       
-      tendP = 0.5 * ((fxL + fxR) - eigenvalue * (qxR - qxL))
+      tendP = 0.5 * (fxL + fxR) - eigenvalue * (qxR - qxL)
     
     end subroutine riemann_solver
     

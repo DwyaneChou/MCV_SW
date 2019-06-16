@@ -194,69 +194,49 @@ MODULE ghost_mod
     integer P1,P2,P3,P4
     real    q1,q2,q3,q4
     
-    if(DOF==3)then
-      ! For MCV3 only
-      do i = ids,ide
-        P1 = pvIdx(1,iref(i))
-        P2 = pvIdx(2,iref(i))
-        P3 = pvIdx(3,iref(i))
-        
-        q1 = src(P1)
-        q2 = src(P2)
-        q3 = src(P3)
-        
-        dest(i) = q1 - ((3.*q1 - 4.*q2 + q3)*coef(i)) / dx + (2.*(q1 - 2.*q2 + q3)*coef(i)**2) / (dx**2)
+#   ifdef MCV3
+    ! For MCV3 only
+    do i = ids,ide
+      P1 = pvIdx(1,iref(i))
+      P2 = pvIdx(2,iref(i))
+      P3 = pvIdx(3,iref(i))
       
-      enddo
-    elseif(DOF==4)then
-      ! For MCV4 only
-      do i = ids,ide
-        P1 = pvIdx(1,iref(i))
-        P2 = pvIdx(2,iref(i))
-        P3 = pvIdx(3,iref(i))
-        P4 = pvIdx(4,iref(i))
-        
-        q1 = src(P1)
-        q2 = src(P2)
-        q3 = src(P3)
-        q4 = src(P4)
-        
-        dest(i) = (2.*dx**3.*q1 + dx**2.*(-11.*q1 + 18.*q2 - 9.*q3 + 2.*q4) * coef(i) + 9.*dx*(2.*q1 - 5.*q2 + 4.*q3 - q4)*coef(i)**2. + 9.*(-q1 + 3.*q2 - 3.*q3 + q4)*coef(i)**3.) / (2.*dx**3.)
+      q1 = src(P1)
+      q2 = src(P2)
+      q3 = src(P3)
       
-      enddo
-    endif
+      dest(i) = q1 - ((3.*q1 - 4.*q2 + q3)*coef(i)) / dx + (2.*(q1 - 2.*q2 + q3)*coef(i)**2) / (dx**2)
+    
+    enddo
+#   endif
+
+#   ifdef MCV4
+    ! For MCV4 only
+    do i = ids,ide
+      P1 = pvIdx(1,iref(i))
+      P2 = pvIdx(2,iref(i))
+      P3 = pvIdx(3,iref(i))
+      P4 = pvIdx(4,iref(i))
+      
+      q1 = src(P1)
+      q2 = src(P2)
+      q3 = src(P3)
+      q4 = src(P4)
+      
+      dest(i) = (2.*dx**3.*q1 + dx**2.*(-11.*q1 + 18.*q2 - 9.*q3 + 2.*q4) * coef(i) + 9.*dx*(2.*q1 - 5.*q2 + 4.*q3 - q4)*coef(i)**2. + 9.*(-q1 + 3.*q2 - 3.*q3 + q4)*coef(i)**3.) / (2.*dx**3.)
+    
+    enddo
+#   endif
     
   end subroutine linear_interp
-  
-  subroutine reconstruct_interp(dest,src)
-  
-  end subroutine reconstruct_interp
-  
-  subroutine reconstruct_coef(coef,f)
-    real, intent(out) :: coef(0:DOF-1,0:DOF-1)
-    real, intent(in ) :: f   (0:DOF-1,0:DOF-1)
-    
-#  ifdef MCV3    
-    coef(0,0) = f(0,0)
-    coef(1,0) = (-3. * f(0,0) + 4. * f(1,0) - f(2,0)) / dx
-    coef(2,0) = (f(0,0) - 2. * f(1,0) + f(2,0)) * 2. / dx**2
-    coef(0,1) = (-3. * f(0,0) + 4. * f(0,1) - f(0,2)) / dy
-    coef(0,2) = (f(0,0) - 2. * f(0,1) + f(0,2)) * 2. / dy**2
-    coef(1,1) = (4. * f(0,0) - 8. * f(0,1) + f(0,2) - 8. * f(1,0) - 4. * f(1,2) + f(2,0) - 4. * f(2,1) + 18. * f(1,1)) * 2. / (dx * dy)
-    coef(2,1) = (-5. * f(0,0) + 12. * f(0,1) - f(0,2) + 16. * f(1,0) + 8. * f(1,2) - 5. * f(2,0) + 12. * f(2,1) - f(2,2) - 36. * f(1,1)) / (dx**2 * dy)
-    coef(1,2) = (-5. * f(0,0) + 16. * f(0,1) - 5. * f(0,2) + 12. * f(1,0) + 12. * f(1,2) - f(2,0) + 8. * f(2,1) - f(2,2) - 36. * f(1,1)) / (dx * dy**2)
-    coef(2,2) = (f(0,0) - 4. * f(0,1) + f(0,2) - 4. * f(1,0) - 4. * f(1,2) + f(2,0) - 4. * f(2,1) + f(2,2) + 12. * f(1,1)) * 3. / (dy**2 * dy**2)
-#  endif    
-  
-  end subroutine reconstruct_coef
   
   ! Fill up halo with ghost points  
   subroutine fill_ghost(stat)
     type(stat_field), intent(inout) :: stat
     
+    call CubedSphereFillGhost(stat%phi            )
     call CubedSphereFillGhost(stat%zonal_wind     )
     call CubedSphereFillGhost(stat%meridional_wind)
-    call CubedSphereFillGhost(stat%phi            )
     
   end subroutine fill_ghost
   

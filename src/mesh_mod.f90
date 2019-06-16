@@ -39,7 +39,7 @@ MODULE mesh_mod
     
     real, dimension(:,:,:    ), allocatable :: phi_s   ! surface geopotential height
     
-    real, dimension(:,:      ), allocatable :: areaCell
+    real, dimension(:,:,:    ), allocatable :: areaCell
     real                                    :: weightsOnPV(DOF,DOF)
 
   end type mesh_info
@@ -57,9 +57,8 @@ MODULE mesh_mod
   subroutine initMesh
     integer :: iPV, jPV, iCell, jCell, iPatch, iVar, iDOF, jDOF
     integer :: iPVs, iPVe, jPVs, jPVe
-    real    :: rho
-    real    :: sinx, cosx, secx, cscx, tanx, cotx, &
-               siny, cosy, secy, cscy, tany, coty
+    
+    real    :: areaCell_temp(Nx,Ny)
     
     ! Allocate arrays in structures
     allocate( mesh%xP       (      ips:ipe, jps:jpe, ifs:ife) )
@@ -95,7 +94,7 @@ MODULE mesh_mod
     
     allocate( mesh%phi_s    (      ips:ipe, jps:jpe, ifs:ife) )
     
-    allocate( mesh%areaCell (Nx, Ny) )
+    allocate( mesh%areaCell (      ics:ice, jcs:jce, ifs:ife) )
     
     allocate( pvIdx         (DOF, ics:ice                  ) )
     allocate( pvIdy         (DOF, jcs:jce                  ) )
@@ -158,19 +157,6 @@ MODULE mesh_mod
           call calc_matrixIA(mesh%matrixIA(:, :, iPV, jPV, iPatch), mesh%lonP(iPV, jPV, iPatch), mesh%latP(iPV, jPV, iPatch), iPatch)
           call calc_Jacobian(mesh%sqrtG   (      iPV, jPV, iPatch), mesh%xP  (iPV, jPV, iPatch), mesh%yP  (iPV, jPV, iPatch))
           
-          sinx = mesh%sinx(iPV, jPV, iPatch)
-          cosx = mesh%cosx(iPV, jPV, iPatch)
-          tanx = mesh%tanx(iPV, jPV, iPatch)
-          cotx = mesh%cotx(iPV, jPV, iPatch)
-          secx = mesh%secx(iPV, jPV, iPatch)
-          cscx = mesh%cscx(iPV, jPV, iPatch)
-          siny = mesh%siny(iPV, jPV, iPatch)
-          cosy = mesh%cosy(iPV, jPV, iPatch)
-          tany = mesh%tany(iPV, jPV, iPatch)
-          coty = mesh%coty(iPV, jPV, iPatch)
-          secy = mesh%secy(iPV, jPV, iPatch)
-          cscy = mesh%cscy(iPV, jPV, iPatch)
-          
           mesh%f(iPV, jPV, iPatch) = 2. * Omega * sin(mesh%latP(iPV,jPV,iPatch))
         end do
       end do
@@ -212,13 +198,18 @@ MODULE mesh_mod
     mesh%weightsOnPV(1,4) = 1.
     mesh%weightsOnPV(2,:) = 3. * mesh%weightsOnPV(1,:)
     mesh%weightsOnPV(3,:) = 3. * mesh%weightsOnPV(1,:)
-    mesh%weightsOnPV(4,:) = mesh%weightsOnPV(1,:)
+    mesh%weightsOnPV(4,:) = 1. * mesh%weightsOnPV(1,:)
     mesh%weightsOnPV      = mesh%weightsOnPV / 80.
 #  endif
     
     ! Calculate areaCell
-    call EquiangularAllAreas(Nx, mesh%areaCell)
-    mesh%areaCell = mesh%areaCell * radius **2
+    mesh%areaCell = 0.
+    call EquiangularAllAreas(Nx, areaCell_temp)
+    areaCell_temp = areaCell_temp * radius**2
+    
+    do iPatch = ifs, ife
+      mesh%areaCell(1:Nx,1:Ny,iPatch) = areaCell_temp
+    enddo
     
   end subroutine initMesh
   

@@ -126,10 +126,14 @@
       type(stat_field), intent(inout) :: stat_old
       type(stat_field), intent(in   ) :: stat_new
       
-      stat_old%phiG = stat_new%phiG
-      stat_old%phi  = stat_new%phi
-      stat_old%u    = stat_new%u  
-      stat_old%v    = stat_new%v
+      stat_old%phiG            = stat_new%phiG
+      stat_old%phi             = stat_new%phi
+      stat_old%u               = stat_new%u  
+      stat_old%v               = stat_new%v
+      stat_old%contraU         = stat_new%contraU
+      stat_old%contraV         = stat_new%contraV
+      stat_old%zonal_wind      = stat_new%zonal_wind
+      stat_old%meridional_wind = stat_new%meridional_wind
     end subroutine switch_stat
     
     subroutine correct_bdy_ghost(stat)
