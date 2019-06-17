@@ -20,7 +20,6 @@ MODULE stat_mod
   end type stat_field
   
   type(stat_field), dimension(:), allocatable :: stat  ! allocated by n time points, which is used by temporal integration schemes
-  type(stat_field)                            :: statC
   contains
   
   subroutine initStat
@@ -58,6 +57,20 @@ MODULE stat_mod
     stat_out%zonal_wind      = stat_in%zonal_wind
     stat_out%meridional_wind = stat_in%meridional_wind
   end subroutine copyStat
+    
+  subroutine switch_stat(stat_old,stat_new)
+    type(stat_field), intent(out) :: stat_old
+    type(stat_field), intent(in ) :: stat_new
+    
+    stat_old%phiG            = stat_new%phiG
+    stat_old%phi             = stat_new%phi
+    stat_old%u               = stat_new%u  
+    stat_old%v               = stat_new%v
+    stat_old%contraU         = stat_new%contraU
+    stat_old%contraV         = stat_new%contraV
+    stat_old%zonal_wind      = stat_new%zonal_wind
+    stat_old%meridional_wind = stat_new%meridional_wind
+  end subroutine switch_stat
   
 END MODULE stat_mod
 

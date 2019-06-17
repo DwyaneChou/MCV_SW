@@ -112,7 +112,7 @@ MODULE spatial_operators_mod
     end subroutine spatial_operator
     
     subroutine calc_tendP(derivP,f,q,eigenvalue)
-      real   , intent(out) :: derivP     (ids:ide)
+      real   , intent(out) :: derivP    (ids:ide)
       real   , intent(in ) :: f         (ips:ipe)
       real   , intent(in ) :: q         (ips:ipe)
       real   , intent(in ) :: eigenvalue(ips:ipe)
@@ -272,8 +272,9 @@ MODULE spatial_operators_mod
         !$OMP PARALLEL DO PRIVATE(j)
         do iPatch = ifs, ife
           do j = jds, jde
-#          ifdef MCV3            
-            call CD4(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ids,ide,ips,ipe) ! For MCV3 only
+#          ifdef MCV3
+            call CD2(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ids,ide,ips,ipe) ! For MCV3 only
+            !call CD4(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ids,ide,ips,ipe) ! For MCV3 only
 #          endif
 #          ifdef MCV4
             call CD6(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ids,ide,ips,ipe) ! For MCV4 only
@@ -287,7 +288,8 @@ MODULE spatial_operators_mod
         do iPatch = ifs, ife
           do i = ids ,ide
 #          ifdef MCV3 
-            call CD4(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jds,jde,jps,jpe) ! For MCV3 only
+            call CD2(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jds,jde,jps,jpe) ! For MCV3 only
+            !call CD4(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jds,jde,jps,jpe) ! For MCV3 only
 #          endif
 #          ifdef MCV4
             call CD6(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jds,jde,jps,jpe) ! For MCV4 only
@@ -300,6 +302,21 @@ MODULE spatial_operators_mod
       vorticity = (dvdx - dudy) / mesh%sqrtG(ids:ide,jds:jde,:)
       
     end subroutine calc_vorticity
+    
+    ! 2nd-order center difference
+    subroutine CD2(dqdh,q,dh,its,ite,ims,ime)
+      real   , intent(out) :: dqdh(its:ite)
+      real   , intent(in ) :: q   (ims:ime)
+      real   , intent(in ) :: dh
+      integer, intent(in ) :: its,ite,ims,ime
+      
+      integer i
+      
+      do i = its, ite
+        dqdh(i) = (q(i+1) - q(i-1)) / 2. / dh
+      enddo
+    
+    end subroutine CD2
     
     ! 4th-order center difference
     subroutine CD4(dqdh,q,dh,its,ite,ims,ime)
