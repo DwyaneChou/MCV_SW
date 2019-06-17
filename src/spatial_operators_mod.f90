@@ -28,6 +28,7 @@ MODULE spatial_operators_mod
       real phiGx(ips:ipe) ! phiG array along x direction
       real phiGy(jps:jpe) ! phiG array along y direction
       
+      real K (ips:ipe,jps:jpe,ifs:ife) ! K = 0.5 * (contraU*coU + contraV*coV)
       real E (ips:ipe,jps:jpe,ifs:ife) ! E = phi + phi_s + K
       real Ex(ips:ipe                ) ! E array along x direction
       real Ey(jps:jpe                ) ! E array along y direction
@@ -43,7 +44,8 @@ MODULE spatial_operators_mod
       
       phiGu = stat%phiG * stat%contraU
       phiGv = stat%phiG * stat%contraV
-      E     = stat%phi + mesh%phi_s + 0.5 * (stat%contraU * stat%u + stat%contraV * stat%v)
+      K     = 0.5 * (stat%contraU * stat%u + stat%contraV * stat%v)
+      E     = stat%phi + mesh%phi_s + K
       
       !$OMP PARALLEL SECTIONS PRIVATE(iPatch)
       !$OMP SECTION
@@ -57,7 +59,6 @@ MODULE spatial_operators_mod
             phiGx = stat%phiG(:,j,iPatch)
             
             do i = ips, ipe
-              !P1          = pvIdx(1,i)
               lambda_x(i) = eigenvalue_x(stat%contraU(i,j,iPatch),stat%phi(i,j,iPatch),mesh%matrixIG(:,:,i,j,iPatch))
             enddo
             
@@ -78,7 +79,6 @@ MODULE spatial_operators_mod
             phiGy  = stat%phiG(i,:,iPatch)
             
             do j = jps, jpe
-              !P1          = pvIdx(1,j)
               lambda_y(j) = eigenvalue_y(stat%contraV(i,j,iPatch),stat%phi(i,j,iPatch),mesh%matrixIG(:,:,i,j,iPatch))
             enddo
             
@@ -111,8 +111,8 @@ MODULE spatial_operators_mod
       
     end subroutine spatial_operator
     
-    subroutine calc_tendP(tendP,f,q,eigenvalue)
-      real   , intent(out) :: tendP     (ids:ide)
+    subroutine calc_tendP(derivP,f,q,eigenvalue)
+      real   , intent(out) :: derivP     (ids:ide)
       real   , intent(in ) :: f         (ips:ipe)
       real   , intent(in ) :: q         (ips:ipe)
       real   , intent(in ) :: eigenvalue(ips:ipe)
@@ -155,9 +155,9 @@ MODULE spatial_operators_mod
         lambda_max = eigenvalue(P1)
         !lambda_max = maxval(eigenvalue(P1-DOF+1:P1+DOF-1))
         !lambda_max = maxval(eigenvalue)
-        call riemann_solver(tendP(P1),fxL(iCell),fxR(iCell),qxL(iCell),qxR(iCell),lambda_max)
+        call riemann_solver(derivP(P1),fxL(iCell),fxR(iCell),qxL(iCell),qxR(iCell),lambda_max)
         
-        ! tendP(P4) = tendP(P1(iCell+1))
+        ! derivP(P4) = derivP(P1(iCell+1))
       enddo
       
       ! Compute tend of inner point(s) on cells
@@ -169,7 +169,7 @@ MODULE spatial_operators_mod
         P3    = pvIdx(3,iCell)
         
         fxVIA     = (f(P3) - f(P1)) / dx
-        tendP(P2) = 1.5 * fxVIA - 0.25 * (tendP(P1) + tendP(P3))
+        derivP(P2) = 1.5 * fxVIA - 0.25 * (derivP(P1) + derivP(P3))
       enddo
 #    endif
 #    ifdef MCV4
@@ -183,43 +183,43 @@ MODULE spatial_operators_mod
         fxVIA = (f(P4) - f(P1)) / dx
         fxxc  = 4.5 * ( f(P1) - f(P2) - f(P3) + f(P4) ) / (dx**2)
         
-        tendP(P2) = 4./3. * fxVIA - (4. * tendP(P1) + 5. * tendP(P4)) / 27. - 4. / 27. * dx * fxxc
-        tendP(P3) = 4./3. * fxVIA - (5. * tendP(P1) + 4. * tendP(P4)) / 27. + 4. / 27. * dx * fxxc
+        derivP(P2) = 4./3. * fxVIA - (4. * derivP(P1) + 5. * derivP(P4)) / 27. - 4. / 27. * dx * fxxc
+        derivP(P3) = 4./3. * fxVIA - (5. * derivP(P1) + 4. * derivP(P4)) / 27. + 4. / 27. * dx * fxxc
       enddo
 #    endif
       
-      !tendP = -tendP
+      !derivP = -derivP
       
     end subroutine calc_tendP
     
-    subroutine polyfit_tend(fitTendCL,fitTendCR,pv,dh)
+    subroutine polyfit_tend(fitDerivCL,fitDerivCR,pv,dh)
       real, intent(in ) :: pv(DOF)
       real, intent(in ) :: dh
-      real, intent(out) :: fitTendCL ! left side tend of the cell
-      real, intent(out) :: fitTendCR ! right side tend of the cell
+      real, intent(out) :: fitDerivCL ! left side tend of the cell
+      real, intent(out) :: fitDerivCR ! right side tend of the cell
       
 #    ifdef MCV3
       ! For MCV3 only
-      fitTendCL = -( pv(3) - 4. * pv(2) + 3. * pv(1)) / dh
-      fitTendCR =  ( pv(1) - 4. * pv(2) + 3. * pv(3)) / dh
+      fitDerivCL = -( pv(3) - 4. * pv(2) + 3. * pv(1)) / dh
+      fitDerivCR =  ( pv(1) - 4. * pv(2) + 3. * pv(3)) / dh
 #    endif
 
 #    ifdef MCV4
       ! For MCV4 only
-      fitTendCL = (-11. * pv(1) + 18. * pv(2) - 9. * pv(3) + 2. * pv(4))/(2. * dh);
-      fitTendCR = ( 11. * pv(4) - 18. * pv(3) + 9. * pv(2) - 2. * pv(1))/(2. * dh);
+      fitDerivCL = (-11. * pv(1) + 18. * pv(2) - 9. * pv(3) + 2. * pv(4))/(2. * dh);
+      fitDerivCR = ( 11. * pv(4) - 18. * pv(3) + 9. * pv(2) - 2. * pv(1))/(2. * dh);
 #    endif
     end subroutine polyfit_tend
     
-    subroutine riemann_solver(tendP,fxL,fxR,qxL,qxR,eigenvalue)
+    subroutine riemann_solver(derivP,fxL,fxR,qxL,qxR,eigenvalue)
       real, intent(in ) :: fxL
       real, intent(in ) :: fxR
       real, intent(in ) :: qxL
       real, intent(in ) :: qxR
       real, intent(in ) :: eigenvalue
-      real, intent(out) :: tendP
+      real, intent(out) :: derivP
       
-      tendP = 0.5 * ((fxL + fxR) - eigenvalue * (qxR - qxL))
+      derivP = 0.5 * ((fxL + fxR) - eigenvalue * (qxR - qxL))
     
     end subroutine riemann_solver
     
@@ -227,7 +227,7 @@ MODULE spatial_operators_mod
       real contraU      ! contravariant wind on x direction
       real phi          ! geopotential height
       real lambda
-      real matrixIG(1,1)
+      real matrixIG(2,2)
       real G11
       
       real lambda1,lambda2
