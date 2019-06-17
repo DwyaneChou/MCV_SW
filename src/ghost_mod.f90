@@ -75,7 +75,9 @@ MODULE ghost_mod
           
           ghost%coef(i,j) = coef
           ghost%iref(i,j) = iref - 1
-          
+        ELSE
+          print*,'Ghost cell location error'
+          stop
         ENDIF
       ENDDO
     ENDDO
@@ -205,7 +207,7 @@ MODULE ghost_mod
       q2 = src(P2)
       q3 = src(P3)
       
-      dest(i) = q1 - ((3.*q1 - 4.*q2 + q3)*coef(i)) / dx + (2.*(q1 - 2.*q2 + q3)*coef(i)**2) / (dx**2)
+      dest(i) = q1 - (3.*q1 - 4.*q2 + q3)*coef(i) / dx + 2.*(q1 - 2.*q2 + q3)*coef(i)**2 / (dx**2)
     
     enddo
 #   endif

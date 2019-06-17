@@ -1,7 +1,7 @@
 clc
 clear
 
-res_num = 2;
+res_num = 4;
 
 % res_nc{1} = 'E:\Study\Models\MCV\MCV_SW\run\mcv_output.nc';
 res_nc{1} = 'E:\Study\Models\MCV\MCV_SW\run\mcv_output_9p0.nc';
