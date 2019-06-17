@@ -325,8 +325,8 @@ MODULE spatial_operators_mod
       integer iCell
       
       do iCell = 1, Ny
-        fCell = f(pvIdx(:,iCell))
-        qCell = q(pvIdx(:,iCell))
+        fCell = f(pvIdy(:,iCell))
+        qCell = q(pvIdy(:,iCell))
         
         call polyfit_tend(fxL_fit(iCell),fxR_fit(iCell),fCell,dx)
         call polyfit_tend(qxL_fit(iCell),qxR_fit(iCell),qCell,dx)
@@ -339,7 +339,7 @@ MODULE spatial_operators_mod
         qxL(iCell) = qxR_fit(iCell-1)
         qxR(iCell) = qxL_fit(iCell)
         
-        P1         = pvIdx(1,iCell)
+        P1         = pvIdy(1,iCell)
         lambda_max = eigenvalue(P1)
         !lambda_max = maxval(eigenvalue(P1-DOF+1:P1+DOF-1))
         !lambda_max = maxval(eigenvalue)
@@ -350,21 +350,21 @@ MODULE spatial_operators_mod
       
       ! Sourth Pole
       iCell     = 1
-      P1        = pvIdx(1,iCell)
+      P1        = pvIdy(1,iCell)
       tendP(P1) = fxL_fit(iCell)
       
       ! North Pole
       iCell     = Ny + 1
-      P1        = pvIdx(1,iCell)
+      P1        = pvIdy(1,iCell)
       tendP(P1) = fxR_fit(iCell-1)
       
       ! Compute tend of inner point(s) on cells
 #ifdef MCV3
       ! For MCV3 only
       do iCell = 1, Ny
-        P1    = pvIdx(1,iCell)
-        P2    = pvIdx(2,iCell)
-        P3    = pvIdx(3,iCell)
+        P1    = pvIdy(1,iCell)
+        P2    = pvIdy(2,iCell)
+        P3    = pvIdy(3,iCell)
         
         fxVIA     = (f(P3) - f(P1)) / dx
         tendP(P2) = 1.5 * fxVIA - 0.25 * (tendP(P1) + tendP(P3))
@@ -374,10 +374,10 @@ MODULE spatial_operators_mod
 #ifdef MCV4
       ! For MCV4 only
       do iCell = 1, Ny
-        P1    = pvIdx(1,iCell)
-        P2    = pvIdx(2,iCell)
-        P3    = pvIdx(3,iCell)
-        P4    = pvIdx(4,iCell)
+        P1    = pvIdy(1,iCell)
+        P2    = pvIdy(2,iCell)
+        P3    = pvIdy(3,iCell)
+        P4    = pvIdy(4,iCell)
         
         fxVIA = (f(P4) - f(P1)) / dx
         fxxc  = 4.5 * ( f(P1) - f(P2) - f(P3) + f(P4) ) / (dx**2)

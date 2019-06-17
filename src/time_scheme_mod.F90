@@ -34,20 +34,11 @@
       call spatial_operator (stat(one), tend(one))
       call update_stat      (stat(two), stat(one), tend(one), 0.5 * dt)
       
-      call addFillValue(stat(two)) ! add fill value for output
-      call history_write_tend(tend(one),2)
-      
       call spatial_operator (stat(two), tend(two))
       call update_stat      (stat(three), stat(one), tend(two), 0.5 * dt)
       
-      call addFillValue(stat(three)) ! add fill value for output
-      call history_write_tend(tend(two),3)
-      
       call spatial_operator (stat(three), tend(three))
       call update_stat      (stat(four), stat(one), tend(three), dt)
-      
-      call addFillValue(stat(four)) ! add fill value for output
-      call history_write_tend(tend(three),4)
       
       call spatial_operator(stat(four), tend(four))
       
@@ -56,10 +47,6 @@
       tend(new)%v    = (tend(one)%v    + 2. * tend(two)%v    + 2. * tend(three)%v    + tend(four)%v   ) / 6.
       
       call update_stat      (stat_new, stat_old, tend(new), dt)
-      
-      call addFillValue(stat_new) ! add fill value for output
-      call history_write_tend(tend(new),5)
-      stop
       
     end subroutine RK4
     
@@ -107,9 +94,9 @@
       
       stat_new%phi = stat_new%phiG / mesh%sqrtG
       
-      stat_new%phiG = stat_new%phi * mesh%sqrtG
-      
       call correct_bdy_ghost(stat_new)
+      
+      stat_new%phiG = stat_new%phi * mesh%sqrtG
       
       !print*,'max/min value of old phiG : ',maxval(stat_old%phiG(ids:ide,jds:jde,ifs:ife)), minval(stat_old%phiG(ids:ide,jds:jde,ifs:ife))
       !print*,'max/min value of old u    : ',maxval(stat_old%u   (ids:ide,jds:jde,ifs:ife)), minval(stat_old%u   (ids:ide,jds:jde,ifs:ife))
@@ -165,10 +152,14 @@
       type(stat_field), intent(inout) :: stat_old
       type(stat_field), intent(in   ) :: stat_new
       
-      stat_old%phiG = stat_new%phiG
-      stat_old%phi  = stat_new%phi
-      stat_old%u    = stat_new%u  
-      stat_old%v    = stat_new%v
+      stat_old%phiG            = stat_new%phiG
+      stat_old%phi             = stat_new%phi
+      stat_old%u               = stat_new%u  
+      stat_old%v               = stat_new%v
+      stat_old%contraU         = stat_new%contraU
+      stat_old%contraV         = stat_new%contraV
+      stat_old%zonal_wind      = stat_new%zonal_wind
+      stat_old%meridional_wind = stat_new%meridional_wind
     end subroutine switch_stat
     
     subroutine correct_bdy_ghost(stat)

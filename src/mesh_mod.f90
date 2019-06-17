@@ -46,6 +46,7 @@ MODULE mesh_mod
   
   ! PV index on Cell
   integer, dimension(:,:    ), allocatable :: pvIdx          ! PV index on Cell
+  integer, dimension(:,:    ), allocatable :: pvIdy          ! PV index on Cell
   integer, dimension(:,:,:,:), allocatable :: pvXIndexOnCell ! PV index on Cell in x direction
   integer, dimension(:,:,:,:), allocatable :: pvYIndexOnCell ! PV index on Cell in y direction
   
@@ -95,6 +96,7 @@ MODULE mesh_mod
     allocate( mesh%areaCell (Nx, Ny) )
     
     allocate( pvIdx         (DOF, ics:ice                  ) )
+    allocate( pvIdy         (DOF, ics:ice                  ) )
     allocate( pvXIndexOnCell(DOF, ics:ice, jcs:jce, ifs:ife) )
     allocate( pvYIndexOnCell(DOF, ics:ice, jcs:jce, ifs:ife) )
     
@@ -102,6 +104,12 @@ MODULE mesh_mod
     do iCell = ics, ice
       do iDOF = 1, DOF
         pvIdx(iDOF,iCell) = (iCell - 1)*DOF + (iDOF - iCell + 1)
+      enddo
+    enddo
+    
+    do jCell = jcs, jce
+      do jDOF = 1, DOF
+        pvIdy(jDOF,jCell) = (jCell - 1)*DOF + (jDOF - jCell + 1)
       enddo
     enddo
     

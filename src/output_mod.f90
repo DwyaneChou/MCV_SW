@@ -167,12 +167,12 @@ module output_mod
       if(status/=nf90_noerr) call handle_err(status)
       
       !print*,'nf90_put_var'
-      status = nf90_put_var(ncid,time_id           ,time                ,start=(/      time_slot_num/),count=(/                       1/))
-      status = nf90_put_var(ncid,u_id              ,tend%u              ,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
-      status = nf90_put_var(ncid,v_id              ,tend%v              ,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
-      !status = nf90_put_var(ncid,zonal_wind_id     ,tend%zonal_wind     ,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
-      !status = nf90_put_var(ncid,meridional_wind_id,tend%meridional_wind,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
-      status = nf90_put_var(ncid,phi_id            ,tend%phiG           ,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
+      status = nf90_put_var(ncid,time_id           ,time                ,start=(/      time_slot_num/),count=(/             1/))
+      status = nf90_put_var(ncid,u_id              ,tend%u              ,start=(/1,1,1,time_slot_num/),count=(/nPVx,nPVy,Nf,1/))
+      status = nf90_put_var(ncid,v_id              ,tend%v              ,start=(/1,1,1,time_slot_num/),count=(/nPVx,nPVy,Nf,1/))
+      !status = nf90_put_var(ncid,zonal_wind_id     ,tend%zonal_wind     ,start=(/1,1,1,time_slot_num/),count=(/nPVx,nPVy,Nf,1/))
+      !status = nf90_put_var(ncid,meridional_wind_id,tend%meridional_wind,start=(/1,1,1,time_slot_num/),count=(/nPVx,nPVy,Nf,1/))
+      status = nf90_put_var(ncid,phi_id            ,tend%phiG           ,start=(/1,1,1,time_slot_num/),count=(/nPVx,nPVy,Nf,1/))
       if(status/=nf90_noerr) call handle_err(status)
       
       !print*,'nf90_close'
