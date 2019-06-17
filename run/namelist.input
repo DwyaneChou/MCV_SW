@@ -3,9 +3,9 @@ run_days         = 5
 run_hours        = 0
 run_minutes      = 0
 run_seconds      = 0
-dt               = 60
+dt               = 30
 history_interval = 3600
-integral_scheme  = 'RK4' ! Choose from 'RK3_TVD' or 'RK4'
+integral_scheme  = 'RK3_TVD' ! Choose from 'RK3_TVD' or 'RK4'
 /
 
 &case_select

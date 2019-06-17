@@ -423,12 +423,12 @@ MODULE spatial_operators_mod
       field(ide,jde,5) = field(ids,jde,3)
       
       ! Point(3,4,5)
-      field(ide,jde,3) = (field_raw(ide,jde,3) + field_raw(ids,jde,5) + field_raw(ids,jde,4)) / 3. ! up-right point of patch 3
-      field(ids,jde,5) = field(ide,jde,3)
+      field(ide,jde,3) = (field_raw(ide,jde,3) + field_raw(ids,jde,4) + field_raw(ids,jde,5)) / 3. ! up-right point of patch 3
       field(ids,jde,4) = field(ide,jde,3)
+      field(ids,jde,5) = field(ide,jde,3)
       
       ! Point(2,3,6)
-      field(ids,jds,3) = (field_raw(ids,jds,3) + field_raw(ide,jds,2) + field_raw(ide,jds,6)) / 3. ! low-left point of patch 3
+      field(ids,jds,3) = (field_raw(ide,jds,2) + field_raw(ids,jds,3) + field_raw(ide,jds,6)) / 3. ! low-left point of patch 3
       field(ide,jds,2) = field(ids,jds,3)
       field(ide,jds,6) = field(ids,jds,3)
       

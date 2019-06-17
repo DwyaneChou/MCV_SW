@@ -15,10 +15,6 @@ MODULE ghost_mod
     real   , dimension(:,:), allocatable :: Y     ! Y coordinate of ghost points, not needed in interpolation
     real   , dimension(:,:), allocatable :: coef  ! Position in cell
     integer, dimension(:,:), allocatable :: iref  ! Index of reference point
-    
-    integer, dimension(:,:      ), allocatable :: irefC   ! reference cell index on x direction
-    integer, dimension(:,:      ), allocatable :: jrefC   ! reference cell index on y direction
-    real   , dimension(:,:,:,:,:), allocatable :: rctCoef
   end type ghostLocation
   
   type(ghostLocation) :: ghost
