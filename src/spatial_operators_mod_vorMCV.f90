@@ -17,13 +17,19 @@ MODULE spatial_operators_mod
       real flux_y(ids:ide,jds:jde,ifs:ife)
       real div_x (ids:ide,jds:jde,ifs:ife)
       real div_y (ids:ide,jds:jde,ifs:ife)
+      real dvdx  (ids:ide,jds:jde,ifs:ife)
+      real dudy  (ids:ide,jds:jde,ifs:ife)
       
       real vorticity(ids:ide,jds:jde,ifs:ife)
       
-      real lambda_x(ips:ipe) ! eigenvalue along x direction
-      real lambda_y(jps:jpe) ! eigenvalue along y direction
+      real lambda_x  (ips:ipe) ! eigenvalue along x direction
+      real lambda_y  (jps:jpe) ! eigenvalue along y direction
+      real upstream_x(ips:ipe) ! upstream coefficient along x direction
+      real upstream_y(jps:jpe) ! upstream coefficient along y direction
       
       real ux   (ips:ipe) ! u array along x direction
+      real uy   (jps:jpe) ! u array along x direction
+      real vx   (ips:ipe) ! v array along y direction
       real vy   (jps:jpe) ! v array along y direction
       real phiGx(ips:ipe) ! phiG array along x direction
       real phiGy(jps:jpe) ! phiG array along y direction
@@ -50,11 +56,12 @@ MODULE spatial_operators_mod
       !$OMP PARALLEL SECTIONS PRIVATE(iPatch)
       !$OMP SECTION
         ! calculate tend in x direction
-        !$OMP PARALLEL DO PRIVATE(i,j,Ex,ux,phiGux,PhiGx,lambda_x)
+        !$OMP PARALLEL DO PRIVATE(i,j,Ex,ux,vx,phiGux,phiGx,lambda_x,upstream_x)
         do iPatch = ifs, ife
           do j = jds, jde
             Ex    = E        (:,j,iPatch)
             ux    = stat%u   (:,j,iPatch)
+            vx    = stat%v   (:,j,iPatch)
             phiGux= phiGu    (:,j,iPatch)
             phiGx = stat%phiG(:,j,iPatch)
             
@@ -62,18 +69,23 @@ MODULE spatial_operators_mod
               lambda_x(i) = eigenvalue_x(stat%contraU(i,j,iPatch),stat%phi(i,j,iPatch),mesh%matrixIG(:,:,i,j,iPatch))
             enddo
             
-            call calc_tendP(flux_x(:,j,iPatch),Ex    ,ux   ,lambda_x)
-            call calc_tendP(div_x (:,j,iPatch),phiGux,phiGx,lambda_x)
+            where(ux==0)ux=1
+            upstream_x = ux/abs(ux)
+            
+            call calc_tendP(flux_x(:,j,iPatch),Ex    ,ux   ,lambda_x  )
+            call calc_tendP(div_x (:,j,iPatch),phiGux,phiGx,lambda_x  )
+            call calc_tendP(dvdx  (:,j,iPatch),vx    ,vx   ,upstream_x)
           enddo
         enddo
         !$OMP END PARALLEL DO
       
       !$OMP SECTION
         ! calculate tend in y direction
-        !$OMP PARALLEL DO PRIVATE(i,j,Ey,vy,phiGvy,PhiGy,lambda_y)
+        !$OMP PARALLEL DO PRIVATE(i,j,Ey,uy,vy,phiGvy,phiGy,lambda_y,upstream_y)
         do iPatch = ifs, ife
           do i = ids, ide
             Ey     = E        (i,:,iPatch)
+            uy     = stat%u   (i,:,iPatch)
             vy     = stat%v   (i,:,iPatch)
             phiGvy = phiGv    (i,:,iPatch)
             phiGy  = stat%phiG(i,:,iPatch)
@@ -82,14 +94,20 @@ MODULE spatial_operators_mod
               lambda_y(j) = eigenvalue_y(stat%contraV(i,j,iPatch),stat%phi(i,j,iPatch),mesh%matrixIG(:,:,i,j,iPatch))
             enddo
             
-            call calc_tendP(flux_y(i,:,iPatch),Ey    ,vy   ,lambda_y)
-            call calc_tendP(div_y (i,:,iPatch),phiGvy,phiGy,lambda_y)
+            where(vy==0)vy=1
+            upstream_y = vy/abs(vy)
+            
+            call calc_tendP(flux_y(i,:,iPatch),Ey    ,vy   ,lambda_y  )
+            call calc_tendP(div_y (i,:,iPatch),phiGvy,phiGy,lambda_y  )
+            call calc_tendP(dudy  (i,:,iPatch),uy    ,uy   ,upstream_y)
           enddo
         enddo
         !$OMP END PARALLEL DO
       !$OMP END PARALLEL SECTIONS
       
-      call calc_vorticity(vorticity,stat%u,stat%v)
+      !call calc_vorticity(vorticity,stat%u,stat%v)
+      
+      vorticity = (dvdx - dudy) / mesh%sqrtG(ids:ide,jds:jde,:)
       
       tend%phiG = -div_x - div_y
       tend%u    = -flux_x + mesh%sqrtG(ids:ide,jds:jde,:) * (vorticity + mesh%f(ids:ide,jds:jde,:)) * stat%contraV(ids:ide,jds:jde,:)
@@ -106,7 +124,9 @@ MODULE spatial_operators_mod
       !print*,'min/max value of div_y          : ', minval(div_y       ), maxval(div_y       )
       !print*,'min/max value of dudt           : ', minval(tend%u      ), maxval(tend%u      )
       !print*,'min/max value of dvdt           : ', minval(tend%v      ), maxval(tend%v      )
-      !print*,'min/max value of dphidt         : ', minval(tend%phi    ), maxval(tend%phi    )
+      !print*,'min/max value of dphidt         : ', minval(tend%phiG   ), maxval(tend%phiG   )
+      !print*,'min/max value of dudy           : ', minval(dudy        ), maxval(dudy        )
+      !print*,'min/max value of dvdx           : ', minval(dvdx        ), maxval(dvdx        )
       !print*,'min/max value of vorticity      : ', minval(vorticity   ), maxval(vorticity   )
       
     end subroutine spatial_operator
@@ -273,8 +293,8 @@ MODULE spatial_operators_mod
         do iPatch = ifs, ife
           do j = jds, jde
 #          ifdef MCV3
-            !call CD2(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ids,ide,ips,ipe) ! For MCV3 only
-            call CD4(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ids,ide,ips,ipe) ! For MCV3 only
+            call CD2(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ids,ide,ips,ipe) ! For MCV3 only
+            !call CD4(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ids,ide,ips,ipe) ! For MCV3 only
 #          endif
 #          ifdef MCV4
             call CD6(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ids,ide,ips,ipe) ! For MCV4 only
@@ -288,8 +308,8 @@ MODULE spatial_operators_mod
         do iPatch = ifs, ife
           do i = ids ,ide
 #          ifdef MCV3 
-            !call CD2(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jds,jde,jps,jpe) ! For MCV3 only
-            call CD4(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jds,jde,jps,jpe) ! For MCV3 only
+            call CD2(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jds,jde,jps,jpe) ! For MCV3 only
+            !call CD4(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jds,jde,jps,jpe) ! For MCV3 only
 #          endif
 #          ifdef MCV4
             call CD6(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jds,jde,jps,jpe) ! For MCV4 only
