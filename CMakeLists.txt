@@ -39,12 +39,6 @@ else ()
   endif ()
 endif ()
 
-add_subdirectory(lib/container)
-
-add_subdirectory(lib/fiona)
-
-add_subdirectory(lib/datetime)
-
 if (MCV_ORDER MATCHES 3)
   #add_compile_definitions("-DMCV3")
   add_definitions("-DMCV3")
@@ -70,7 +64,7 @@ set(source_files
 )
 
 add_library(MCV_SW ${source_files})
-target_link_libraries(MCV_SW netcdf netcdff fiona fortran_datetime)
+target_link_libraries(MCV_SW netcdf netcdff)
 
 add_executable(MCV_SW.exe src/MCV_SW.f90)
 target_link_libraries(MCV_SW.exe MCV_SW)
