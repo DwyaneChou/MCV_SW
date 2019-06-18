@@ -34,10 +34,10 @@ MODULE spatial_operators_mod
       phiGu = stat%phiG * stat%contraU
       phiGv = stat%phiG * stat%contraV
       
-      !!$OMP PARALLEL SECTIONS PRIVATE(iPatch)
-      !!$OMP SECTION
+      !$OMP PARALLEL SECTIONS PRIVATE(iPatch)
+      !$OMP SECTION
         ! calculate tend in x direction
-        !!$OMP PARALLEL DO PRIVATE(i,j,phiGux,upstream_x)
+        !$OMP PARALLEL DO PRIVATE(i,j,phiGux,upstream_x)
         do iPatch = ifs, ife
           do j = jds, jde
             ux     = stat%contraU(:,j,iPatch)
@@ -49,11 +49,11 @@ MODULE spatial_operators_mod
             call calc_tendP(div_x (:,j,iPatch),phiGux,phiGux,upstream_x)
           enddo
         enddo
-        !!$OMP END PARALLEL DO
+        !$OMP END PARALLEL DO
       
-      !!$OMP SECTION
+      !$OMP SECTION
         ! calculate tend in y direction
-        !!$OMP PARALLEL DO PRIVATE(i,j,phiGvy,upstream_y)
+        !$OMP PARALLEL DO PRIVATE(i,j,phiGvy,upstream_y)
         do iPatch = ifs, ife
           do i = ids, ide
             vy     = stat%contraV(i,:,iPatch)
@@ -65,8 +65,8 @@ MODULE spatial_operators_mod
             call calc_tendP(div_y (i,:,iPatch),phiGvy,phiGvy,upstream_y)
           enddo
         enddo
-        !!$OMP END PARALLEL DO
-      !!$OMP END PARALLEL SECTIONS
+        !$OMP END PARALLEL DO
+      !$OMP END PARALLEL SECTIONS
       
       tend%phiG = -div_x - div_y
       
@@ -312,7 +312,7 @@ MODULE spatial_operators_mod
       
       integer i,j,iPatch
       
-      !!$OMP PARALLEL DO PRIVATE(i,j)
+      !$OMP PARALLEL DO PRIVATE(i,j)
       do iPatch = ifs, ife
         do j = jps, jpe
           do i = ips, ipe
@@ -320,7 +320,7 @@ MODULE spatial_operators_mod
           enddo
         enddo
       enddo
-      !!$OMP END PARALLEL DO
+      !$OMP END PARALLEL DO
     end subroutine convert_wind_P2SP
     
     subroutine convert_wind_SP2P(stat)
@@ -328,7 +328,7 @@ MODULE spatial_operators_mod
       
       integer i,j,iPatch
       
-      !!$OMP PARALLEL DO PRIVATE(i,j)
+      !$OMP PARALLEL DO PRIVATE(i,j)
       do iPatch = ifs, ife
         do j = jps, jpe
           do i = ips, ipe
@@ -336,7 +336,7 @@ MODULE spatial_operators_mod
           enddo
         enddo
       enddo
-      !!$OMP END PARALLEL DO
+      !$OMP END PARALLEL DO
     end subroutine convert_wind_SP2P
     
     subroutine convert_wind_cov2contrav(stat)
@@ -344,7 +344,7 @@ MODULE spatial_operators_mod
       
       integer i,j,iPatch
       
-      !!$OMP PARALLEL DO PRIVATE(i,j)
+      !$OMP PARALLEL DO PRIVATE(i,j)
       do iPatch = ifs, ife
         do j = jps, jpe
           do i = ips, ipe
@@ -352,7 +352,7 @@ MODULE spatial_operators_mod
           enddo
         enddo
       enddo
-      !!$OMP END PARALLEL DO
+      !$OMP END PARALLEL DO
     end subroutine convert_wind_cov2contrav
     
 END MODULE spatial_operators_mod
