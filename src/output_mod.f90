@@ -26,6 +26,7 @@ module output_mod
       integer areaCell_id
       integer time_id
       integer u_id,v_id
+      integer contraU_id,contraV_id
       integer phi_id
       integer zonal_wind_id,meridional_wind_id
       integer uC_id,vC_id
@@ -50,6 +51,8 @@ module output_mod
       status = nf90_def_var(ncid,'time'           ,NF90_INT   ,(/                                     time_dim_id/),time_id           )
       status = nf90_def_var(ncid,'uP'             ,NF90_DOUBLE,(/lonP_dim_id,latP_dim_id,patch_dim_id,time_dim_id/),u_id              )
       status = nf90_def_var(ncid,'vP'             ,NF90_DOUBLE,(/lonP_dim_id,latP_dim_id,patch_dim_id,time_dim_id/),v_id              )
+      status = nf90_def_var(ncid,'contraUP'       ,NF90_DOUBLE,(/lonP_dim_id,latP_dim_id,patch_dim_id,time_dim_id/),contraU_id        )
+      status = nf90_def_var(ncid,'contraVP'       ,NF90_DOUBLE,(/lonP_dim_id,latP_dim_id,patch_dim_id,time_dim_id/),contraV_id        )
       status = nf90_def_var(ncid,'phiP'           ,NF90_DOUBLE,(/lonP_dim_id,latP_dim_id,patch_dim_id,time_dim_id/),phi_id            )
       status = nf90_def_var(ncid,'zonal_wind'     ,NF90_DOUBLE,(/lonP_dim_id,latP_dim_id,patch_dim_id,time_dim_id/),zonal_wind_id     )
       status = nf90_def_var(ncid,'meridional_wind',NF90_DOUBLE,(/lonP_dim_id,latP_dim_id,patch_dim_id,time_dim_id/),meridional_wind_id)
@@ -89,6 +92,8 @@ module output_mod
       status = nf90_put_att(ncid,time_id           ,'units'    ,'seconds'     )
       status = nf90_put_att(ncid,u_id              ,'units'    ,'m/s'         )
       status = nf90_put_att(ncid,v_id              ,'units'    ,'m/s'         )
+      status = nf90_put_att(ncid,contraU_id        ,'units'    ,'m/s'         )
+      status = nf90_put_att(ncid,contraV_id        ,'units'    ,'m/s'         )
       status = nf90_put_att(ncid,phi_id            ,'units'    ,'m^2/s^2'     )
       status = nf90_put_att(ncid,zonal_wind_id     ,'units'    ,'m/s'         )
       status = nf90_put_att(ncid,meridional_wind_id,'units'    ,'m/s'         )
@@ -104,6 +109,8 @@ module output_mod
       status = nf90_put_att(ncid,time_id           ,'long_name','time'                                     )
       status = nf90_put_att(ncid,u_id              ,'long_name','covariant wind vector on x direcvtion'    )
       status = nf90_put_att(ncid,v_id              ,'long_name','covariant wind vector on y direcvtion'    )
+      status = nf90_put_att(ncid,contraU_id        ,'long_name','contravariant wind vector on x direcvtion')
+      status = nf90_put_att(ncid,contraV_id        ,'long_name','contravariant wind vector on y direcvtion')
       status = nf90_put_att(ncid,phi_id            ,'long_name','geopotential height on points'            )
       status = nf90_put_att(ncid,zonal_wind_id     ,'long_name','zonal wind'                               )
       status = nf90_put_att(ncid,meridional_wind_id,'long_name','meridional wind'                          )
@@ -113,6 +120,8 @@ module output_mod
       
       status = nf90_put_att(ncid,u_id              ,'_FillValue',FillValue)
       status = nf90_put_att(ncid,v_id              ,'_FillValue',FillValue)
+      status = nf90_put_att(ncid,contraU_id        ,'_FillValue',FillValue)
+      status = nf90_put_att(ncid,contraV_id        ,'_FillValue',FillValue)
       status = nf90_put_att(ncid,phi_id            ,'_FillValue',FillValue)
       status = nf90_put_att(ncid,zonal_wind_id     ,'_FillValue',FillValue)
       status = nf90_put_att(ncid,meridional_wind_id,'_FillValue',FillValue)
@@ -144,6 +153,7 @@ module output_mod
       integer ncid
       integer time_id
       integer u_id,v_id
+      integer contraU_id,contraV_id
       integer phi_id
       integer zonal_wind_id,meridional_wind_id
       integer uC_id,vC_id
@@ -162,6 +172,8 @@ module output_mod
       status = nf90_inq_varid(ncid,'time'           , time_id           )
       status = nf90_inq_varid(ncid,'uP'             , u_id              )
       status = nf90_inq_varid(ncid,'vP'             , v_id              )
+      status = nf90_inq_varid(ncid,'contraUP'       , contraU_id        )
+      status = nf90_inq_varid(ncid,'contraVP'       , contraV_id        )
       status = nf90_inq_varid(ncid,'phiP'           , phi_id            )
       status = nf90_inq_varid(ncid,'zonal_wind'     , zonal_wind_id     )
       status = nf90_inq_varid(ncid,'meridional_wind', meridional_wind_id)
@@ -174,6 +186,8 @@ module output_mod
       status = nf90_put_var(ncid,time_id           ,time                ,start=(/      time_slot_num/),count=(/                       1/))
       status = nf90_put_var(ncid,u_id              ,stat%u              ,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
       status = nf90_put_var(ncid,v_id              ,stat%v              ,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
+      status = nf90_put_var(ncid,contraU_id        ,stat%contraU        ,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
+      status = nf90_put_var(ncid,contraV_id        ,stat%contraV        ,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
       status = nf90_put_var(ncid,phi_id            ,stat%phi            ,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
       status = nf90_put_var(ncid,zonal_wind_id     ,stat%zonal_wind     ,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
       status = nf90_put_var(ncid,meridional_wind_id,stat%meridional_wind,start=(/1,1,1,time_slot_num/),count=(/nPVx_halo,nPVy_halo,Nf,1/))
