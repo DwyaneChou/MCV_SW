@@ -59,8 +59,8 @@ module test_case_mod
     
     gh0      = 100. * gravity
     alpha0   = 0.
-    b0       = 10.e-14
-    lambda_c = 3. * pi / 2.
+    b0       = 0.5 * 10.e-14
+    lambda_c = 0. !3. * pi / 2.
     theta_c  = 0.
     u0       = 2. * pi * radius / (12. * 86400.)
     Xc       = radius * cos(lambda_c) * cos(theta_c)

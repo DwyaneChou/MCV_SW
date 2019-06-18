@@ -13,25 +13,14 @@ MODULE spatial_operators_mod
       type(stat_field), intent(in ) :: stat
       type(tend_field), intent(out) :: tend
     
-      real flux_x(ids:ide,jds:jde,ifs:ife)
-      real flux_y(ids:ide,jds:jde,ifs:ife)
       real div_x (ids:ide,jds:jde,ifs:ife)
       real div_y (ids:ide,jds:jde,ifs:ife)
       
-      real vorticity(ids:ide,jds:jde,ifs:ife)
-      
-      real lambda_x(ips:ipe) ! eigenvalue along x direction
-      real lambda_y(jps:jpe) ! eigenvalue along y direction
+      real upstream_x(ips:ipe) ! upstream coefficient along x direction
+      real upstream_y(jps:jpe) ! upstream coefficient along y direction
       
       real ux   (ips:ipe) ! u array along x direction
-      real vy   (jps:jpe) ! v array along y direction
-      real phiGx(ips:ipe) ! phiG array along x direction
-      real phiGy(jps:jpe) ! phiG array along y direction
-      
-      real K (ips:ipe,jps:jpe,ifs:ife) ! K = 0.5 * (contraU*coU + contraV*coV)
-      real E (ips:ipe,jps:jpe,ifs:ife) ! E = phi + phi_s + K
-      real Ex(ips:ipe                ) ! E array along x direction
-      real Ey(jps:jpe                ) ! E array along y direction
+      real vy   (jps:jpe) ! u array along x direction
       
       real phiGu (ips:ipe,jps:jpe,ifs:ife) ! phiGu = phi * contraU
       real phiGux(ips:ipe                ) ! phiGu array along x direction
@@ -44,56 +33,40 @@ MODULE spatial_operators_mod
       
       phiGu = stat%phiG * stat%contraU
       phiGv = stat%phiG * stat%contraV
-      K     = 0.5 * (stat%contraU * stat%u + stat%contraV * stat%v)
-      E     = stat%phi + mesh%phi_s + K
       
-      !$OMP PARALLEL SECTIONS PRIVATE(iPatch)
-      !$OMP SECTION
+      !!$OMP PARALLEL SECTIONS PRIVATE(iPatch)
+      !!$OMP SECTION
         ! calculate tend in x direction
-        !$OMP PARALLEL DO PRIVATE(i,j,Ex,ux,phiGux,PhiGx,lambda_x)
+        !!$OMP PARALLEL DO PRIVATE(i,j,phiGux,upstream_x)
         do iPatch = ifs, ife
           do j = jds, jde
-            Ex    = E        (:,j,iPatch)
-            ux    = stat%u   (:,j,iPatch)
             phiGux= phiGu    (:,j,iPatch)
-            phiGx = stat%phiG(:,j,iPatch)
             
-            do i = ips, ipe
-              lambda_x(i) = eigenvalue_x(stat%contraU(i,j,iPatch),stat%phi(i,j,iPatch),mesh%matrixIG(:,:,i,j,iPatch))
-            enddo
+            where(ux==0)ux=1
+            upstream_x = ux/abs(ux)
             
-            call calc_tendP(flux_x(:,j,iPatch),Ex    ,ux   ,lambda_x)
-            call calc_tendP(div_x (:,j,iPatch),phiGux,phiGx,lambda_x)
+            call calc_tendP(div_x (:,j,iPatch),phiGux,phiGux,upstream_x)
           enddo
         enddo
-        !$OMP END PARALLEL DO
+        !!$OMP END PARALLEL DO
       
-      !$OMP SECTION
+      !!$OMP SECTION
         ! calculate tend in y direction
-        !$OMP PARALLEL DO PRIVATE(i,j,Ey,vy,phiGvy,PhiGy,lambda_y)
+        !!$OMP PARALLEL DO PRIVATE(i,j,phiGvy,upstream_y)
         do iPatch = ifs, ife
           do i = ids, ide
-            Ey     = E        (i,:,iPatch)
-            vy     = stat%v   (i,:,iPatch)
             phiGvy = phiGv    (i,:,iPatch)
-            phiGy  = stat%phiG(i,:,iPatch)
             
-            do j = jps, jpe
-              lambda_y(j) = eigenvalue_y(stat%contraV(i,j,iPatch),stat%phi(i,j,iPatch),mesh%matrixIG(:,:,i,j,iPatch))
-            enddo
+            where(vy==0)vy=1
+            upstream_y = vy/abs(vy)
             
-            call calc_tendP(flux_y(i,:,iPatch),Ey    ,vy   ,lambda_y)
-            call calc_tendP(div_y (i,:,iPatch),phiGvy,phiGy,lambda_y)
+            call calc_tendP(div_y (i,:,iPatch),phiGvy,phiGvy,upstream_y)
           enddo
         enddo
-        !$OMP END PARALLEL DO
-      !$OMP END PARALLEL SECTIONS
-      
-      call calc_vorticity(vorticity,stat%u,stat%v)
+        !!$OMP END PARALLEL DO
+      !!$OMP END PARALLEL SECTIONS
       
       tend%phiG = -div_x - div_y
-      tend%u    = -flux_x + mesh%sqrtG(ids:ide,jds:jde,:) * (vorticity + mesh%f(ids:ide,jds:jde,:)) * stat%contraV(ids:ide,jds:jde,:)
-      tend%v    = -flux_y - mesh%sqrtG(ids:ide,jds:jde,:) * (vorticity + mesh%f(ids:ide,jds:jde,:)) * stat%contraU(ids:ide,jds:jde,:)
       
       !print*,'min/max value of u              : ', minval(stat%u      ), maxval(stat%u      )
       !print*,'min/max value of v              : ', minval(stat%v      ), maxval(stat%v      )
@@ -106,7 +79,9 @@ MODULE spatial_operators_mod
       !print*,'min/max value of div_y          : ', minval(div_y       ), maxval(div_y       )
       !print*,'min/max value of dudt           : ', minval(tend%u      ), maxval(tend%u      )
       !print*,'min/max value of dvdt           : ', minval(tend%v      ), maxval(tend%v      )
-      !print*,'min/max value of dphidt         : ', minval(tend%phi    ), maxval(tend%phi    )
+      !print*,'min/max value of dphidt         : ', minval(tend%phiG   ), maxval(tend%phiG   )
+      !print*,'min/max value of dudy           : ', minval(dudy        ), maxval(dudy        )
+      !print*,'min/max value of dvdx           : ', minval(dvdx        ), maxval(dvdx        )
       !print*,'min/max value of vorticity      : ', minval(vorticity   ), maxval(vorticity   )
       
     end subroutine spatial_operator
@@ -223,137 +198,10 @@ MODULE spatial_operators_mod
     
     end subroutine riemann_solver
     
-    function eigenvalue_x(contraU,phi,matrixIG) result(lambda)
-      real contraU      ! contravariant wind on x direction
-      real phi          ! geopotential height
-      real lambda
-      real matrixIG(2,2)
-      real G11
-      
-      real lambda1,lambda2
-      
-      G11 = matrixIG(1,1)
-      
-      lambda1 = contraU - sqrt(G11*phi)
-      lambda2 = contraU + sqrt(G11*phi)
-      lambda  = max(abs(lambda1),abs(lambda2))
-      
-    end function eigenvalue_x
-    
-    function eigenvalue_y(contraV,phi,matrixIG) result(lambda)
-      real contraV      ! contravariant wind on y direction
-      real phi          ! geopotential height
-      real lambda
-      real matrixIG(2,2)
-      real G22
-      
-      real lambda1,lambda2
-      
-      G22 = matrixIG(2,2)
-      
-      lambda1 = contraV - sqrt(G22*phi)
-      lambda2 = contraV + sqrt(G22*phi)
-      lambda  = max(abs(lambda1),abs(lambda2))
-      
-    end function eigenvalue_y
-    
-    subroutine calc_vorticity(vorticity,u,v)
-      real, intent(out) :: vorticity(ids:ide,jds:jde,ifs:ife)
-      real, intent(in ) :: u        (ips:ipe,jps:jpe,ifs:ife)
-      real, intent(in ) :: v        (ips:ipe,jps:jpe,ifs:ife)
-      
-      real dvdx(ids:ide,jds:jde,ifs:ife)
-      real dudy(ids:ide,jds:jde,ifs:ife)
-      
-      integer i,j,iPatch
-      
-      !$OMP PARALLEL SECTIONS PRIVATE(iPatch)
-      !$OMP SECTION
-        !$OMP PARALLEL DO PRIVATE(j)
-        do iPatch = ifs, ife
-          do j = jds, jde
-#          ifdef MCV3
-            !call CD2(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ids,ide,ips,ipe) ! For MCV3 only
-            call CD4(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ids,ide,ips,ipe) ! For MCV3 only
-#          endif
-#          ifdef MCV4
-            call CD6(dvdx(:,j,iPatch),v(:,j,iPatch),dx/(DOF-1),ids,ide,ips,ipe) ! For MCV4 only
-#          endif
-          enddo
-        enddo
-        !$OMP END PARALLEL DO
-      
-      !$OMP SECTION
-        !$OMP PARALLEL DO PRIVATE(j)
-        do iPatch = ifs, ife
-          do i = ids ,ide
-#          ifdef MCV3 
-            !call CD2(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jds,jde,jps,jpe) ! For MCV3 only
-            call CD4(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jds,jde,jps,jpe) ! For MCV3 only
-#          endif
-#          ifdef MCV4
-            call CD6(dudy(i,:,iPatch),u(i,:,iPatch),dy/(DOF-1),jds,jde,jps,jpe) ! For MCV4 only
-#          endif
-          enddo
-        enddo
-        !$OMP END PARALLEL DO
-      !$OMP END PARALLEL SECTIONS
-      
-      vorticity = (dvdx - dudy) / mesh%sqrtG(ids:ide,jds:jde,:)
-      
-    end subroutine calc_vorticity
-    
-    ! 2nd-order center difference
-    subroutine CD2(dqdh,q,dh,its,ite,ims,ime)
-      real   , intent(out) :: dqdh(its:ite)
-      real   , intent(in ) :: q   (ims:ime)
-      real   , intent(in ) :: dh
-      integer, intent(in ) :: its,ite,ims,ime
-      
-      integer i
-      
-      do i = its, ite
-        dqdh(i) = (q(i+1) - q(i-1)) / 2. / dh
-      enddo
-    
-    end subroutine CD2
-    
-    ! 4th-order center difference
-    subroutine CD4(dqdh,q,dh,its,ite,ims,ime)
-      real   , intent(out) :: dqdh(its:ite)
-      real   , intent(in ) :: q   (ims:ime)
-      real   , intent(in ) :: dh
-      integer, intent(in ) :: its,ite,ims,ime
-      
-      integer i
-      
-      do i = its, ite
-        dqdh(i) = (q(i-2) - 8. * q(i-1) + 8. * q(i+1) - q(i+2)) / 12. / dh
-      enddo
-    
-    end subroutine CD4
-  
-    ! 6th-order center difference
-    subroutine CD6(dqdh,q,dh,its,ite,ims,ime)
-      real   , intent(out) :: dqdh(its:ite)
-      real   , intent(in ) :: q   (ims:ime)
-      real   , intent(in ) :: dh
-      integer, intent(in ) :: its,ite,ims,ime
-      
-      integer i
-      
-      do i = its, ite
-        dqdh(i) = (-q(i-3) + 9. * q(i-2) - 45. * q(i-1) + 45. * q(i+1) - 9. * q(i+2) + q(i+3)) / 60. / dh
-      enddo
-    
-    end subroutine CD6
-    
     subroutine unify_bdy_stat(stat)
       type(stat_field), intent(inout) :: stat
       
       call unify_bdy_field(stat%phi            (ids:ide,jds:jde,ifs:ife))
-      call unify_bdy_field(stat%zonal_wind     (ids:ide,jds:jde,ifs:ife))
-      call unify_bdy_field(stat%meridional_wind(ids:ide,jds:jde,ifs:ife))
       
     end subroutine unify_bdy_stat
     
@@ -462,7 +310,7 @@ MODULE spatial_operators_mod
       
       integer i,j,iPatch
       
-      !$OMP PARALLEL DO PRIVATE(i,j)
+      !!$OMP PARALLEL DO PRIVATE(i,j)
       do iPatch = ifs, ife
         do j = jps, jpe
           do i = ips, ipe
@@ -470,7 +318,7 @@ MODULE spatial_operators_mod
           enddo
         enddo
       enddo
-      !$OMP END PARALLEL DO
+      !!$OMP END PARALLEL DO
     end subroutine convert_wind_P2SP
     
     subroutine convert_wind_SP2P(stat)
@@ -478,7 +326,7 @@ MODULE spatial_operators_mod
       
       integer i,j,iPatch
       
-      !$OMP PARALLEL DO PRIVATE(i,j)
+      !!$OMP PARALLEL DO PRIVATE(i,j)
       do iPatch = ifs, ife
         do j = jps, jpe
           do i = ips, ipe
@@ -486,7 +334,7 @@ MODULE spatial_operators_mod
           enddo
         enddo
       enddo
-      !$OMP END PARALLEL DO
+      !!$OMP END PARALLEL DO
     end subroutine convert_wind_SP2P
     
     subroutine convert_wind_cov2contrav(stat)
@@ -494,7 +342,7 @@ MODULE spatial_operators_mod
       
       integer i,j,iPatch
       
-      !$OMP PARALLEL DO PRIVATE(i,j)
+      !!$OMP PARALLEL DO PRIVATE(i,j)
       do iPatch = ifs, ife
         do j = jps, jpe
           do i = ips, ipe
@@ -502,7 +350,7 @@ MODULE spatial_operators_mod
           enddo
         enddo
       enddo
-      !$OMP END PARALLEL DO
+      !!$OMP END PARALLEL DO
     end subroutine convert_wind_cov2contrav
     
 END MODULE spatial_operators_mod

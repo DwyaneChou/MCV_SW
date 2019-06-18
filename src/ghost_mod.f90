@@ -233,8 +233,6 @@ MODULE ghost_mod
     type(stat_field), intent(inout) :: stat
     
     call CubedSphereFillGhost(stat%phi            )
-    call CubedSphereFillGhost(stat%zonal_wind     )
-    call CubedSphereFillGhost(stat%meridional_wind)
     
   end subroutine fill_ghost
   

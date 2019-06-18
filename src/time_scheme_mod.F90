@@ -36,8 +36,6 @@
       call spatial_operator(stat(four), tend(four))
       
       tend(new)%phiG = (tend(one)%phiG + 2. * tend(two)%phiG + 2. * tend(three)%phiG + tend(four)%phiG) / 6.
-      tend(new)%u    = (tend(one)%u    + 2. * tend(two)%u    + 2. * tend(three)%u    + tend(four)%u   ) / 6.
-      tend(new)%v    = (tend(one)%v    + 2. * tend(two)%v    + 2. * tend(three)%v    + tend(four)%v   ) / 6.
       
       call update_stat      (stat_new, stat_old, tend(new), dt)
 
@@ -75,8 +73,6 @@
       real            , intent(in   ) :: inc_t
       
       stat_new%phiG(ids:ide,jds:jde,ifs:ife) = stat_old%phiG(ids:ide,jds:jde,ifs:ife) + inc_t * tend%phiG(ids:ide,jds:jde,ifs:ife)
-      stat_new%u   (ids:ide,jds:jde,ifs:ife) = stat_old%u   (ids:ide,jds:jde,ifs:ife) + inc_t * tend%u   (ids:ide,jds:jde,ifs:ife)
-      stat_new%v   (ids:ide,jds:jde,ifs:ife) = stat_old%v   (ids:ide,jds:jde,ifs:ife) + inc_t * tend%v   (ids:ide,jds:jde,ifs:ife)
       
       stat_new%phi = stat_new%phiG / mesh%sqrtG
       
@@ -84,6 +80,12 @@
       
       stat_new%phiG = stat_new%phi * mesh%sqrtG
       
+      stat_new%u               = stat_old%u
+      stat_new%v               = stat_old%v
+      stat_new%contraU         = stat_old%contraU
+      stat_new%contraV         = stat_old%contraV
+      stat_new%zonal_wind      = stat_old%zonal_wind
+      stat_new%meridional_wind = stat_old%meridional_wind
     end subroutine update_stat
     
     subroutine update_stat_RK3_TVD_1(stat_new, stat_old,stat1, tend)
@@ -93,8 +95,6 @@
       type(tend_field), intent(in   ) :: tend
       
       stat_new%phiG(ids:ide,jds:jde,ifs:ife) = 0.75 * stat_old%phiG(ids:ide,jds:jde,ifs:ife) + 0.25 * stat1%phiG(ids:ide,jds:jde,ifs:ife) + 0.25 * dt * tend%phiG(ids:ide,jds:jde,ifs:ife)
-      stat_new%u   (ids:ide,jds:jde,ifs:ife) = 0.75 * stat_old%u   (ids:ide,jds:jde,ifs:ife) + 0.25 * stat1%u   (ids:ide,jds:jde,ifs:ife) + 0.25 * dt * tend%u   (ids:ide,jds:jde,ifs:ife)
-      stat_new%v   (ids:ide,jds:jde,ifs:ife) = 0.75 * stat_old%v   (ids:ide,jds:jde,ifs:ife) + 0.25 * stat1%v   (ids:ide,jds:jde,ifs:ife) + 0.25 * dt * tend%v   (ids:ide,jds:jde,ifs:ife)
       
       stat_new%phi = stat_new%phiG / mesh%sqrtG
       
@@ -102,6 +102,12 @@
       
       stat_new%phiG = stat_new%phi * mesh%sqrtG
       
+      stat_new%u               = stat_old%u
+      stat_new%v               = stat_old%v
+      stat_new%contraU         = stat_old%contraU
+      stat_new%contraV         = stat_old%contraV
+      stat_new%zonal_wind      = stat_old%zonal_wind
+      stat_new%meridional_wind = stat_old%meridional_wind
     end subroutine update_stat_RK3_TVD_1
     
     subroutine update_stat_RK3_TVD_2(stat_new, stat_old,stat2, tend)
@@ -111,8 +117,6 @@
       type(tend_field), intent(in   ) :: tend
       
       stat_new%phiG(ids:ide,jds:jde,ifs:ife) = stat_old%phiG(ids:ide,jds:jde,ifs:ife) / 3. + 2./3. * stat2%phiG(ids:ide,jds:jde,ifs:ife) + 2./3. * dt * tend%phiG(ids:ide,jds:jde,ifs:ife)
-      stat_new%u   (ids:ide,jds:jde,ifs:ife) = stat_old%u   (ids:ide,jds:jde,ifs:ife) / 3. + 2./3. * stat2%u   (ids:ide,jds:jde,ifs:ife) + 2./3. * dt * tend%u   (ids:ide,jds:jde,ifs:ife)
-      stat_new%v   (ids:ide,jds:jde,ifs:ife) = stat_old%v   (ids:ide,jds:jde,ifs:ife) / 3. + 2./3. * stat2%v   (ids:ide,jds:jde,ifs:ife) + 2./3. * dt * tend%v   (ids:ide,jds:jde,ifs:ife)
       
       stat_new%phi = stat_new%phiG / mesh%sqrtG
       
@@ -120,17 +124,20 @@
       
       stat_new%phiG = stat_new%phi * mesh%sqrtG
       
+      stat_new%u               = stat_old%u
+      stat_new%v               = stat_old%v
+      stat_new%contraU         = stat_old%contraU
+      stat_new%contraV         = stat_old%contraV
+      stat_new%zonal_wind      = stat_old%zonal_wind
+      stat_new%meridional_wind = stat_old%meridional_wind
     end subroutine update_stat_RK3_TVD_2
     
     subroutine correct_bdy_ghost(stat)
       type(stat_field), intent(inout) :: stat
       
       ! Fill ghost band and unify values of common points on boundary
-      call convert_wind_P2SP       (stat)
       call fill_ghost              (stat)
       call unify_bdy_stat          (stat)
-      call convert_wind_SP2P       (stat)
-      call convert_wind_cov2contrav(stat)
       
     end subroutine correct_bdy_ghost
     
