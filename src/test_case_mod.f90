@@ -13,14 +13,10 @@ module test_case_mod
   subroutine initTestCase
     integer i,j,iPatch
     
-    if(case_num == 2)then
+    if(case_num == 1)then
       print*,''
-      print*,'test case 2 is selected'
-      call case2(stat(0))
-    elseif(case_num == 6)then
-      print*,''
-      print*,'test case 6 is selected'
-      call case6(stat(0))
+      print*,' gaussian hill is selected'
+      call gaussian_hill(stat(0))
     endif
     
     stat(0)%phiG = stat(0)%phi * mesh%sqrtG
@@ -45,28 +41,45 @@ module test_case_mod
   end subroutine initTestCase
 
   ! Global steady flow
-  subroutine case2(stat)
+  subroutine gaussian_hill(stat)
     type(stat_field), intent(inout) :: stat
     real,dimension(ips:ipe,jps:jpe,ifs:ife) :: u,v,phi                 ! working array
     
     real    :: u0
-    real    :: gh0 = 29400.
-    real    :: gh
+    real    :: alpha0
+    real    :: b0
+    real    :: lambda_c
+    real    :: theta_c
+    real    :: gh0
+    
+    real    :: X,Y,Z
+    real    :: Xc,Yc,Zc
     
     integer :: i,j,iPatch
     
-    u0 = 2. * pi * radius / (12. * 86400.)
+    gh0      = 100. * gravity
+    alpha0   = 0.
+    b0       = 10.e-14
+    lambda_c = 3. * pi / 2.
+    theta_c  = 0.
+    u0       = 2. * pi * radius / (12. * 86400.)
+    Xc       = radius * cos(lambda_c) * cos(theta_c)
+    Yc       = radius * sin(lambda_c) * cos(theta_c)
+    Zc       = radius * sin(theta_c)
     
     do iPatch = ifs, ife
       do j = jps, jpe
         do i = ips, ipe
-          phi(i,j,iPatch) = gh0 - (radius * Omega * u0 + u0**2 / 2.) * sin(mesh%latP(i,j,iPatch))**2
-          u  (i,j,iPatch) = u0 * cos(mesh%latP(i,j,iPatch))
+          X = radius * cos(mesh%lonP(i,j,iPatch)) * cos(mesh%latP(i,j,iPatch))
+          Y = radius * sin(mesh%lonP(i,j,iPatch)) * cos(mesh%latP(i,j,iPatch))
+          Z = radius * sin(mesh%latP(i,j,iPatch))
+          
+          phi(i,j,iPatch) = gh0 * exp(-b0 * ((X-Xc)**2 + (Y-Yc)**2 + (Z-Zc)**2))
+          u  (i,j,iPatch) = u0 * (cos(mesh%latP(i,j,iPatch)) * cos(alpha0) + sin(alpha0) * cos(mesh%lonP(i,j,iPatch)) * sin(mesh%latP(i,j,iPatch)))
+          v  (i,j,iPatch) = -u0 * sin(alpha0) * sin(mesh%lonP(i,j,iPatch))
         enddo
       enddo
     enddo
-    
-    v = 0.
     
     stat%zonal_wind      = u
     stat%meridional_wind = v
@@ -74,68 +87,8 @@ module test_case_mod
     
     mesh%phi_s = 0.
     
-  end subroutine case2
+  end subroutine gaussian_hill
   
-  ! Rossby-Haurwitz wave with wavenumber 4
-  subroutine case6(stat)
-    type(stat_field), intent(inout) :: stat
-    real,parameter              :: omg  = 7.848d-6         ! angular velocity of RH wave
-    real,parameter              :: R    = 4              ! wave number of RH wave
-    real,parameter              :: h0   = 8000.          ! wave number of RH wave
-    
-    real,dimension(ips:ipe,jps:jpe,ifs:ife) :: u,v,phi                 ! working array
-    real,dimension(ips:ipe,jps:jpe,ifs:ife) :: u1,u2,u3                ! working array
-    real,dimension(ips:ipe,jps:jpe,ifs:ife) :: AA1,Ac,A21,A22,A23,Ah   ! working array
-    real,dimension(ips:ipe,jps:jpe,ifs:ife) :: Bc,BB1,BB2,Bh           ! working array
-    real,dimension(ips:ipe,jps:jpe,ifs:ife) :: CC,CC1,CC2,Ch           ! working array
-    real,dimension(ips:ipe,jps:jpe,ifs:ife) :: sinlat                  ! working array
-    real,dimension(ips:ipe,jps:jpe,ifs:ife) :: coslat                  ! working array
-    real,dimension(ips:ipe,jps:jpe,ifs:ife) :: longitude               ! working array
-    
-    integer                                 :: i,j,iPatch              ! working variable
-    
-    sinlat    = sin(mesh%latP)
-    coslat    = cos(mesh%latP)
-    longitude = mesh%lonP
-    
-    do iPatch = ifs, ife
-      do j = jps, jpe
-        do i = ips, ipe
-          u1(i,j,iPatch) = coslat(i,j,iPatch)
-          u2(i,j,iPatch) = R*coslat(i,j,iPatch)**(R-1)*sinlat(i,j,iPatch)**2*cos(R*longitude(i,j,iPatch))
-          u3(i,j,iPatch) = coslat(i,j,iPatch)**(R+1)*cos(R*longitude(i,j,iPatch))
-          u (i,j,iPatch) = radius*omg*(u1(i,j,iPatch)+u2(i,j,iPatch)-u3(i,j,iPatch))
-          
-          v (i,j,iPatch) = -radius*omg*R*coslat(i,j,iPatch)**(R-1)*sinlat(i,j,iPatch)*sin(R*longitude(i,j,iPatch))
-          
-          AA1 (i,j,iPatch) = omg*0.5*(2.*Omega+omg)*coslat(i,j,iPatch)**2
-          Ac  (i,j,iPatch) = 0.25*omg**2
-          A21 (i,j,iPatch) = (R+1.)*coslat(i,j,iPatch)**(2.*R+2.)
-          A22 (i,j,iPatch) = (2.*R**2-R-2.)*coslat(i,j,iPatch)**(2.*R)
-          A23 (i,j,iPatch) = 2.*R**2*coslat(i,j,iPatch)**(2.*R-2)
-          Ah  (i,j,iPatch) = AA1(i,j,iPatch)+Ac(i,j,iPatch)*(A21(i,j,iPatch)+A22(i,j,iPatch)-A23(i,j,iPatch))
-          
-          Bc  (i,j,iPatch) = 2.*(Omega+omg)*omg/((R+1)*(R+2))*coslat(i,j,iPatch)**R
-          BB1 (i,j,iPatch) = R**2+2.*R+2.
-          BB2 (i,j,iPatch) = (R+1.)**2.*coslat(i,j,iPatch)**2.
-          Bh  (i,j,iPatch) = Bc(i,j,iPatch)*(BB1(i,j,iPatch)-BB2(i,j,iPatch))
-          
-          CC  (i,j,iPatch) = 0.25*omg**2*coslat(i,j,iPatch)**(2.*R)
-          CC1 (i,j,iPatch) = (R+1.)*coslat(i,j,iPatch)**2;
-          CC2 (i,j,iPatch) = R+2.
-          Ch  (i,j,iPatch) = CC(i,j,iPatch)*(CC1(i,j,iPatch)-CC2(i,j,iPatch))
-          
-          phi (i,j,iPatch) = gravity*h0+radius**2*(Ah(i,j,iPatch) + Bh(i,j,iPatch)*cos(R*longitude(i,j,iPatch)) + Ch(i,j,iPatch)*cos(2.0*R*longitude(i,j,iPatch)))
-        enddo
-      enddo
-    enddo
-    
-    stat%zonal_wind      = u
-    stat%meridional_wind = v
-    stat%phi             = phi
-    
-    mesh%phi_s = 0.
-  end subroutine case6
   
 end module test_case_mod
     
