@@ -40,7 +40,8 @@ MODULE spatial_operators_mod
         !!$OMP PARALLEL DO PRIVATE(i,j,phiGux,upstream_x)
         do iPatch = ifs, ife
           do j = jds, jde
-            phiGux= phiGu    (:,j,iPatch)
+            ux     = stat%contraU(:,j,iPatch)
+            phiGux = phiGu (:,j,iPatch)
             
             where(ux==0)ux=1
             upstream_x = ux/abs(ux)
@@ -55,7 +56,8 @@ MODULE spatial_operators_mod
         !!$OMP PARALLEL DO PRIVATE(i,j,phiGvy,upstream_y)
         do iPatch = ifs, ife
           do i = ids, ide
-            phiGvy = phiGv    (i,:,iPatch)
+            vy     = stat%contraV(i,:,iPatch)
+            phiGvy = phiGv (i,:,iPatch)
             
             where(vy==0)vy=1
             upstream_y = vy/abs(vy)

@@ -15,6 +15,6 @@ case_num    = 1, ! Choose from 2 or 6
 &domain
 dx          = 3,  ! Unit: degree 
 dy          = 3,  ! Unit: degree
-xhalo       = 10,  ! The ghost cell size
-yhalo       = 10,  ! The ghost cell size
+xhalo       = 1,  ! The ghost cell size
+yhalo       = 1,  ! The ghost cell size
 /

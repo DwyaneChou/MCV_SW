@@ -20,9 +20,9 @@ MODULE tend_mod
     allocate( tend(-nIntegralSubSteps:1) )
     
     do iT = -nIntegralSubSteps, 1
-      allocate(tend(iT)%u   (ids:ide,jds:jde,Nf))
-      allocate(tend(iT)%v   (ids:ide,jds:jde,Nf))
-      allocate(tend(iT)%phiG(ids:ide,jds:jde,Nf))
+      allocate(tend(iT)%u   (ids:ide,jds:jde,ifs:ife))
+      allocate(tend(iT)%v   (ids:ide,jds:jde,ifs:ife))
+      allocate(tend(iT)%phiG(ids:ide,jds:jde,ifs:ife))
     enddo
     
   end subroutine initTend
