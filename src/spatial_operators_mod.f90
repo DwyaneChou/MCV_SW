@@ -427,7 +427,7 @@ MODULE spatial_operators_mod
       real contraU      ! contravariant wind on x direction
       real phi          ! geopotential height
       real lambda
-      real matrixIG(1,1)
+      real matrixIG(2,2)
       real G11
       
       real lambda1,lambda2
