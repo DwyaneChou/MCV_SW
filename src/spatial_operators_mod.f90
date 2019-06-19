@@ -48,7 +48,6 @@ MODULE spatial_operators_mod
       real phiGvy(jps:jpe                ) ! phiGv array along y direction
       
       integer i,j,iPatch
-      integer P1
       
       phiGu = stat%phiG * stat%contraU
       phiGv = stat%phiG * stat%contraV
