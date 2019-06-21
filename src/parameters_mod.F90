@@ -34,6 +34,11 @@ module parameters_mod
   integer :: jcs      ! The starting index in the y-direction  (Physical cell/element domain)
   integer :: jce      ! The ending index in the y-direction  (Physical cell/element domain)
   
+  integer :: its      ! The starting index in the x-direction of cell in cube
+  integer :: ite      ! The ending index in the x-direction of cell in cube
+  integer :: jts      ! The starting index in the y-direction of cell in cube
+  integer :: jte      ! The ending index in the y-direction of cell in cube
+  
   integer :: ils      ! The starting index of grid line in the x-direction (Physical cell/element domain)
   integer :: ile      ! The ending index of grid line in the x-direction (Physical cell/element domain)
   integer :: jls      ! The starting index of grid line in the y-direction (Physical cell/element domain)
@@ -165,6 +170,11 @@ module parameters_mod
     ice  = Nx + xhalo
     jcs  = 1  - yhalo
     jce  = Ny + yhalo
+    
+    its = 1
+    ite = Nx
+    jts = 1
+    jte = Ny
     
     Nx_halo = ice - ics + 1
     Ny_halo = jce - jcs + 1
