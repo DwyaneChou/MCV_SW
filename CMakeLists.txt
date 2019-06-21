@@ -66,6 +66,6 @@ set(source_files
 add_library(MCV_SW ${source_files})
 target_link_libraries(MCV_SW netcdf netcdff)
 
-add_executable(MCV_SW.exe src/MCV_SW.f90)
+add_executable(MCV_SW.exe src/MCV_SW.F90)
 target_link_libraries(MCV_SW.exe MCV_SW)
 
