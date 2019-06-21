@@ -47,81 +47,82 @@ MODULE spatial_operators_mod
       real phiGv (ips:ipe,jps:jpe,ifs:ife) ! phiGv = phi * contraV
       real phiGvy(3*DOF-2                ) ! phiGv array along y direction
       
-      integer Ps,Pe,Pl,Pr
+      integer Ps,Pe ! Index of first point on left cell, index of last point on right cell
+      integer Pl,Pr ! Index of left point on the center cell, index of right point on the center cell
       integer i,j,iPatch
+      
+      ! Ps            Pl           Pr             Pe
+      ! |------o------|------o------|------o------|
+      !    left cell    center cell   right cell
       
       phiGu = stat%phiG * stat%contraU
       phiGv = stat%phiG * stat%contraV
       K     = 0.5 * (stat%contraU * stat%u + stat%contraV * stat%v)
       E     = stat%phi + mesh%phi_s + K
       
-      !$OMP PARALLEL SECTIONS PRIVATE(iPatch, lambdaL, lambdaR, upstreamL, upstreamR)
-      !$OMP SECTION
-        ! calculate tend in x direction
-        !$OMP PARALLEL DO PRIVATE(i,j,Ex,ux,vx,contraUx,phiGux,PhiGx,Pl,Pr,Ps,Pe)
-        do iPatch = ifs, ife
-          do j = jds, jde
-            do i = its, ite
-              Pl       = pvIdx(1  ,i)
-              Pr       = pvIdx(DOF,i)
-              Ps       = Pl - DOF + 1
-              Pe       = Pr + DOF - 1
-              
-              Ex       = E           (Ps:Pe,j,iPatch)
-              ux       = stat%u      (Ps:Pe,j,iPatch)
-              vx       = stat%v      (Ps:Pe,j,iPatch)
-              contraUx = stat%contraU(Ps:Pe,j,iPatch)
-              phiGux   = phiGu       (Ps:Pe,j,iPatch)
-              phiGx    = stat%phiG   (Ps:Pe,j,iPatch)
-              
-              lambdaL = eigenvalue_x(stat%contraU(Pl,j,iPatch),stat%phi(Pl,j,iPatch),mesh%matrixIG(:,:,Pl,j,iPatch))
-              lambdaR = eigenvalue_x(stat%contraU(Pr,j,iPatch),stat%phi(Pr,j,iPatch),mesh%matrixIG(:,:,Pr,j,iPatch))
-              
-              where(contraUx==0)contraUx=1.
-              upstreamL = contraUx(DOF    ) / abs(contraUx(DOF    ))
-              upstreamR = contraUx(2*DOF-1) / abs(contraUx(2*DOF-1))
-              
-              call calc_tendP(flux_x(Pl:Pr,j,iPatch),Ex    ,ux   ,lambdaL  , lambdaR  )
-              call calc_tendP(div_x (Pl:Pr,j,iPatch),phiGux,phiGx,lambdaL  , lambdaR  )
-              call calc_tendP(dvdx  (Pl:Pr,j,iPatch),vx    ,vx   ,upstreamL, upstreamR)
-            enddo
+      ! calculate tend in x direction
+      do iPatch = ifs, ife
+        !$OMP PARALLEL DO PRIVATE(i,Ex,ux,vx,contraUx,phiGux,PhiGx,Pl,Pr,Ps,Pe, lambdaL, lambdaR, upstreamL, upstreamR)
+        do j = jds, jde
+          do i = its, ite
+            Pl       = pvIdx(1  ,i)
+            Pr       = pvIdx(DOF,i)
+            Ps       = Pl - DOF + 1
+            Pe       = Pr + DOF - 1
+            
+            Ex       = E           (Ps:Pe,j,iPatch)
+            ux       = stat%u      (Ps:Pe,j,iPatch)
+            vx       = stat%v      (Ps:Pe,j,iPatch)
+            contraUx = stat%contraU(Ps:Pe,j,iPatch)
+            phiGux   = phiGu       (Ps:Pe,j,iPatch)
+            phiGx    = stat%phiG   (Ps:Pe,j,iPatch)
+            
+            lambdaL = eigenvalue_x(stat%contraU(Pl,j,iPatch),stat%phi(Pl,j,iPatch),mesh%matrixIG(:,:,Pl,j,iPatch))
+            lambdaR = eigenvalue_x(stat%contraU(Pr,j,iPatch),stat%phi(Pr,j,iPatch),mesh%matrixIG(:,:,Pr,j,iPatch))
+            
+            where(contraUx==0)contraUx=1.
+            upstreamL = contraUx(DOF    ) / abs(contraUx(DOF    ))
+            upstreamR = contraUx(2*DOF-1) / abs(contraUx(2*DOF-1))
+            
+            call calc_tendP(flux_x(Pl:Pr,j,iPatch),Ex    ,ux   ,lambdaL  , lambdaR  )
+            call calc_tendP(div_x (Pl:Pr,j,iPatch),phiGux,phiGx,lambdaL  , lambdaR  )
+            call calc_tendP(dvdx  (Pl:Pr,j,iPatch),vx    ,vx   ,upstreamL, upstreamR)
           enddo
         enddo
         !$OMP END PARALLEL DO
+      enddo
       
-      !$OMP SECTION
-        ! calculate tend in y direction
-        !$OMP PARALLEL DO PRIVATE(i,j,Ey,uy,vy,contraVy,phiGvy,PhiGy,Pl,Pr,Ps,Pe)
-        do iPatch = ifs, ife
-          do i = ids, ide
-            do j = jts, jte
-              Pl       = pvIdy(1  ,j)
-              Pr       = pvIdy(DOF,j)
-              Ps       = Pl - DOF + 1
-              Pe       = Pr + DOF - 1
-              
-              Ey       = E           (i,Ps:Pe,iPatch)
-              uy       = stat%u      (i,Ps:Pe,iPatch)
-              vy       = stat%v      (i,Ps:Pe,iPatch)
-              contraVy = stat%contraV(i,Ps:Pe,iPatch)
-              phiGvy   = phiGv       (i,Ps:Pe,iPatch)
-              phiGy    = stat%phiG   (i,Ps:Pe,iPatch)
+      ! calculate tend in y direction
+      do iPatch = ifs, ife
+        !$OMP PARALLEL DO PRIVATE(j,Ey,uy,vy,contraVy,phiGvy,PhiGy,Pl,Pr,Ps,Pe, lambdaL, lambdaR, upstreamL, upstreamR)
+        do i = ids, ide
+          do j = jts, jte
+            Pl       = pvIdy(1  ,j)
+            Pr       = pvIdy(DOF,j)
+            Ps       = Pl - DOF + 1
+            Pe       = Pr + DOF - 1
             
-              lambdaL = eigenvalue_y(stat%contraV(i,Pl,iPatch),stat%phi(i,Pl,iPatch),mesh%matrixIG(:,:,i,Pl,iPatch))
-              lambdaR = eigenvalue_y(stat%contraV(i,Pr,iPatch),stat%phi(i,Pr,iPatch),mesh%matrixIG(:,:,i,Pr,iPatch))
-            
-              where(contraVy==0)contraVy=1.
-              upstreamL = contraVy(DOF    ) / abs(contraVy(DOF    ))
-              upstreamR = contraVy(2*DOF-1) / abs(contraVy(2*DOF-1))
-            
-              call calc_tendP(flux_y(i,Pl:Pr,iPatch),Ey    ,vy   ,lambdaL  , lambdaR  )
-              call calc_tendP(div_y (i,Pl:Pr,iPatch),phiGvy,phiGy,lambdaL  , lambdaR  )
-              call calc_tendP(dudy  (i,Pl:Pr,iPatch),uy    ,uy   ,upstreamL, upstreamR)
-            enddo
+            Ey       = E           (i,Ps:Pe,iPatch)
+            uy       = stat%u      (i,Ps:Pe,iPatch)
+            vy       = stat%v      (i,Ps:Pe,iPatch)
+            contraVy = stat%contraV(i,Ps:Pe,iPatch)
+            phiGvy   = phiGv       (i,Ps:Pe,iPatch)
+            phiGy    = stat%phiG   (i,Ps:Pe,iPatch)
+          
+            lambdaL = eigenvalue_y(stat%contraV(i,Pl,iPatch),stat%phi(i,Pl,iPatch),mesh%matrixIG(:,:,i,Pl,iPatch))
+            lambdaR = eigenvalue_y(stat%contraV(i,Pr,iPatch),stat%phi(i,Pr,iPatch),mesh%matrixIG(:,:,i,Pr,iPatch))
+          
+            where(contraVy==0)contraVy=1.
+            upstreamL = contraVy(DOF    ) / abs(contraVy(DOF    ))
+            upstreamR = contraVy(2*DOF-1) / abs(contraVy(2*DOF-1))
+          
+            call calc_tendP(flux_y(i,Pl:Pr,iPatch),Ey    ,vy   ,lambdaL  , lambdaR  )
+            call calc_tendP(div_y (i,Pl:Pr,iPatch),phiGvy,phiGy,lambdaL  , lambdaR  )
+            call calc_tendP(dudy  (i,Pl:Pr,iPatch),uy    ,uy   ,upstreamL, upstreamR)
           enddo
         enddo
         !$OMP END PARALLEL DO
-      !$OMP END PARALLEL SECTIONS
+      enddo
       
       vorticity = (dvdx - dudy) / mesh%sqrtG(ids:ide,jds:jde,ifs:ife)
       
