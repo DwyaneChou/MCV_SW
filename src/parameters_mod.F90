@@ -67,6 +67,8 @@ module parameters_mod
   integer :: Nlambda  ! grid points in the lambda direction
   integer :: Ntheta   ! grid points in the theta direction
   
+  integer :: nPVHalo
+  
   integer :: nIntegralSubSteps ! number of integral substeps in temporal integration scheme
   integer :: nsteps            ! total integral steps
   
@@ -187,6 +189,8 @@ module parameters_mod
     
     nPVx_halo = ipe - ips + 1
     nPVy_halo = jpe - jps + 1
+    
+    nPVHalo = xhalo * (DOF - 1)
     
     ! Setting the starting patch index and ending patch index
     ifs = 1

@@ -62,7 +62,7 @@
         if(mod(it*dt,float(history_interval))==0.and.(it*dt>=history_interval))then
           output_idx = output_idx + 1
           call addFillValue(stat(new))
-          
+          call convert_wind_P2SP (stat(new))
           call calc_VIA(stat(new)%uC  ,stat(new)%u  )
           call calc_VIA(stat(new)%vC  ,stat(new)%v  )
           call calc_VIA(stat(new)%phiC,stat(new)%phi)

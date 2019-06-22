@@ -404,6 +404,42 @@ MODULE spatial_operators_mod
       !$OMP END PARALLEL DO
     end subroutine convert_wind_P2SP
     
+    ! convert vector from patch to sphere, for ghost zone
+    subroutine convert_ghost_wind_P2SP(stat)
+      type(stat_field), intent(inout) :: stat
+      
+      integer i,j,iPatch
+      
+      !$OMP PARALLEL DO PRIVATE(i,j)
+      do iPatch = ifs, ife
+        ! left
+        do j = jds, jde
+          do i = ids, ids+nPVHalo
+            call covProjPlane2Sphere(stat%zonal_wind(i,j,iPatch), stat%meridional_wind(i,j,iPatch), stat%u(i,j,iPatch), stat%v(i,j,iPatch), mesh%matrixA(:,:,i,j,iPatch), mesh%matrixIG(:,:,i,j,iPatch))
+          enddo
+        enddo
+        ! right
+        do j = jds, jde
+          do i = ide-nPVHalo, ide
+            call covProjPlane2Sphere(stat%zonal_wind(i,j,iPatch), stat%meridional_wind(i,j,iPatch), stat%u(i,j,iPatch), stat%v(i,j,iPatch), mesh%matrixA(:,:,i,j,iPatch), mesh%matrixIG(:,:,i,j,iPatch))
+          enddo
+        enddo
+        ! top
+        do j = jde-nPVHalo, jde
+          do i = ids+nPVHalo, ide-nPVHalo
+            call covProjPlane2Sphere(stat%zonal_wind(i,j,iPatch), stat%meridional_wind(i,j,iPatch), stat%u(i,j,iPatch), stat%v(i,j,iPatch), mesh%matrixA(:,:,i,j,iPatch), mesh%matrixIG(:,:,i,j,iPatch))
+          enddo
+        enddo
+        ! bottom
+        do j = jds, jds+nPVHalo
+          do i = ids+nPVHalo, ide-nPVHalo
+            call covProjPlane2Sphere(stat%zonal_wind(i,j,iPatch), stat%meridional_wind(i,j,iPatch), stat%u(i,j,iPatch), stat%v(i,j,iPatch), mesh%matrixA(:,:,i,j,iPatch), mesh%matrixIG(:,:,i,j,iPatch))
+          enddo
+        enddo
+      enddo
+      !$OMP END PARALLEL DO
+    end subroutine convert_ghost_wind_P2SP
+    
     subroutine convert_wind_SP2P(stat)
       type(stat_field), intent(inout) :: stat
       
@@ -419,6 +455,41 @@ MODULE spatial_operators_mod
       enddo
       !$OMP END PARALLEL DO
     end subroutine convert_wind_SP2P
+    
+    subroutine convert_ghost_wind_SP2P(stat)
+      type(stat_field), intent(inout) :: stat
+      
+      integer i,j,iPatch
+      
+      !$OMP PARALLEL DO PRIVATE(i,j)
+      do iPatch = ifs, ife
+        ! left
+        do j = jds, jde
+          do i = ips, ids
+            call covProjSphere2Plane(stat%u(i,j,iPatch), stat%v(i,j,iPatch), stat%zonal_wind(i,j,iPatch), stat%meridional_wind(i,j,iPatch), mesh%matrixIA(:,:,i,j,iPatch), mesh%matrixG(:,:,i,j,iPatch))
+          enddo
+        enddo
+        ! right
+        do j = jds, jde
+          do i = ide, ipe
+            call covProjSphere2Plane(stat%u(i,j,iPatch), stat%v(i,j,iPatch), stat%zonal_wind(i,j,iPatch), stat%meridional_wind(i,j,iPatch), mesh%matrixIA(:,:,i,j,iPatch), mesh%matrixG(:,:,i,j,iPatch))
+          enddo
+        enddo
+        ! top
+        do j = jde, jpe
+          do i = ids, ide
+            call covProjSphere2Plane(stat%u(i,j,iPatch), stat%v(i,j,iPatch), stat%zonal_wind(i,j,iPatch), stat%meridional_wind(i,j,iPatch), mesh%matrixIA(:,:,i,j,iPatch), mesh%matrixG(:,:,i,j,iPatch))
+          enddo
+        enddo
+        ! bottom
+        do j = jps, jds
+          do i = ids, ide
+            call covProjSphere2Plane(stat%u(i,j,iPatch), stat%v(i,j,iPatch), stat%zonal_wind(i,j,iPatch), stat%meridional_wind(i,j,iPatch), mesh%matrixIA(:,:,i,j,iPatch), mesh%matrixG(:,:,i,j,iPatch))
+          enddo
+        enddo
+      enddo
+      !$OMP END PARALLEL DO
+    end subroutine convert_ghost_wind_SP2P
     
     subroutine convert_wind_cov2contrav(stat)
       type(stat_field), intent(inout) :: stat

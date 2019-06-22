@@ -7,8 +7,6 @@ MODULE ghost_mod
   
   implicit none
   
-  integer nPVHalo
-  
   ! ghost location
   type ghostLocation
     real   , dimension(:,:), allocatable :: X     ! X coordinate of ghost points
@@ -30,8 +28,6 @@ MODULE ghost_mod
     integer :: iref
     
     real    :: X_RAW(Nx+1)
-    
-    nPVHalo = xhalo * (DOF - 1)
     
     allocate(ghost%X   (ids:ide,nPVHalo))
     allocate(ghost%Y   (ids:ide,nPVHalo))

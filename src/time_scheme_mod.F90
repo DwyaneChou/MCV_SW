@@ -126,10 +126,17 @@
       type(stat_field), intent(inout) :: stat
       
       ! Fill ghost band and unify values of common points on boundary
-      call convert_wind_P2SP       (stat)
+      !! Scheme 1
+      !call convert_wind_P2SP       (stat)
+      !call fill_ghost              (stat)
+      !call unify_bdy_stat          (stat)
+      !call convert_wind_SP2P       (stat)
+      !call convert_wind_cov2contrav(stat)
+      ! Scheme 2
+      call convert_ghost_wind_P2SP (stat)
       call fill_ghost              (stat)
       call unify_bdy_stat          (stat)
-      call convert_wind_SP2P       (stat)
+      call convert_ghost_wind_SP2P (stat)
       call convert_wind_cov2contrav(stat)
       
     end subroutine correct_bdy_ghost
