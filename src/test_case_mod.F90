@@ -17,6 +17,10 @@ module test_case_mod
       print*,''
       print*,'test case 2 is selected'
       call case2(stat(0))
+    elseif(case_num==5)then
+      print*,''
+      print*,'test case 5 is selected'
+      call case5(stat(0))
     elseif(case_num == 6)then
       print*,''
       print*,'test case 6 is selected'
@@ -75,6 +79,55 @@ module test_case_mod
     mesh%phi_s = 0.
     
   end subroutine case2
+  
+  ! Isolated mountain
+  subroutine case5(stat)
+    type(stat_field), intent(inout) :: stat
+    
+    real,parameter :: hs0      = 2000.
+    real,parameter :: u0       = 20.
+    real,parameter :: alpha    = 0.
+    real,parameter :: gh0      = 5960.*gravity
+                                    
+    real                                    :: rr
+    real                                    :: labmda_c
+    real                                    :: theta_c
+    real,dimension(ips:ipe,jps:jpe,ifs:ife) :: u,v,phi,hs ! working array
+    real,dimension(ips:ipe,jps:jpe,ifs:ife) :: longitude  ! working array
+    real,dimension(ips:ipe,jps:jpe,ifs:ife) :: latitude   ! working array
+    real,dimension(ips:ipe,jps:jpe,ifs:ife) :: r
+    
+    integer :: i,j,iPatch ! working variable
+    
+    rr       = pi/9.
+    labmda_c = 1.5*pi
+    theta_c  = pi/6.
+    
+    longitude = mesh%lonP
+    latitude  = mesh%latP
+    
+    hs = 0.
+    
+    do iPatch = ifs, ife
+      do j = jps, jpe
+          do i = ips, ipe
+              r (i,j,iPatch) = sqrt(min(rr**2,(longitude(i,j,iPatch)-labmda_c)**2+(latitude(i,j,iPatch)-theta_c)**2))
+              hs(i,j,iPatch) = gravity*hs0*(1.-r(i,j,iPatch)/rr)
+              if(iPatch==4.and.hs(i,j,iPatch)/=0)print*,hs(i,j,iPatch)
+              
+              u  (i,j,iPatch) = u0*(cos(latitude(i,j,iPatch))*cos(alpha)+cos(longitude(i,j,iPatch))*sin(latitude(i,j,iPatch))*sin(alpha))
+              v  (i,j,iPatch) = -u0*sin(longitude(i,j,iPatch))*sin(alpha)
+              phi(i,j,iPatch) = gh0 - (radius*Omega*u0 + u0**2/2.d0)*(-cos(longitude(i,j,iPatch))*cos(latitude(i,j,iPatch))*sin(alpha) + sin(latitude(i,j,iPatch))*cos(alpha))**2 - hs(i,j,iPatch)
+          enddo
+      enddo
+    enddo
+    
+    stat%zonal_wind      = u
+    stat%meridional_wind = v
+    stat%phi             = phi
+    mesh%phi_s           = hs
+    
+  end subroutine case5
   
   ! Rossby-Haurwitz wave with wavenumber 4
   subroutine case6(stat)
