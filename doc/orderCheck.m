@@ -3,11 +3,19 @@ clear
 
 res_num = 4;
 
-% res_nc{1} = 'E:\Study\Models\MCV\MCV_SW\run\mcv_output.nc';
-res_nc{1} = 'E:\Study\Models\MCV\MCV_SW\run\mcv_output_9p0.nc';
-res_nc{2} = 'E:\Study\Models\MCV\MCV_SW\run\mcv_output_4p5.nc';
-res_nc{3} = 'E:\Study\Models\MCV\MCV_SW\run\mcv_output_2p25.nc';
-res_nc{4} = 'E:\Study\Models\MCV\MCV_SW\run\mcv_output_1p125.nc';
+% history_path = 'E:\Study\Models\MCV\MCV_SW\run\MCV4_SGF_Version1';
+history_path = 'E:\Study\Models\MCV\MCV_SW\run';
+
+% res_nc{1} = [history_path,'\','mcv_output_9p0.nc'];
+% res_nc{2} = [history_path,'\','mcv_output_4p5.nc'];
+% res_nc{3} = [history_path,'\','mcv_output_2p25.nc'];
+% res_nc{4} = [history_path,'\','mcv_output_1p125.nc'];
+% res_nc{5} = [history_path,'\','mcv_output_0p5625.nc'];
+
+res_nc{1} = [history_path,'\','mcv_output_6p0.nc'];
+res_nc{2} = [history_path,'\','mcv_output_3p0.nc'];
+res_nc{3} = [history_path,'\','mcv_output_1p5.nc'];
+res_nc{4} = [history_path,'\','mcv_output_0p75.nc'];
 
 for ires = 1:res_num
     ics   = ncreadatt(res_nc{ires},'/','ics');

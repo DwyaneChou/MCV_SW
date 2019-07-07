@@ -106,15 +106,15 @@ module test_case_mod
     longitude = mesh%lonP
     latitude  = mesh%latP
     
+    where(longitude<0) longitude = 2. * pi + longitude
+    
     hs = 0.
     
     do iPatch = ifs, ife
       do j = jps, jpe
           do i = ips, ipe
-              r (i,j,iPatch) = sqrt(min(rr**2,(longitude(i,j,iPatch)-labmda_c)**2+(latitude(i,j,iPatch)-theta_c)**2))
-              hs(i,j,iPatch) = gravity*hs0*(1.-r(i,j,iPatch)/rr)
-              if(iPatch==4.and.hs(i,j,iPatch)/=0)print*,hs(i,j,iPatch)
-              
+              r  (i,j,iPatch) = sqrt(min(rr**2,(longitude(i,j,iPatch)-labmda_c)**2+(latitude(i,j,iPatch)-theta_c)**2))
+              hs (i,j,iPatch) = gravity*hs0*(1.-r(i,j,iPatch)/rr)
               u  (i,j,iPatch) = u0*(cos(latitude(i,j,iPatch))*cos(alpha)+cos(longitude(i,j,iPatch))*sin(latitude(i,j,iPatch))*sin(alpha))
               v  (i,j,iPatch) = -u0*sin(longitude(i,j,iPatch))*sin(alpha)
               phi(i,j,iPatch) = gh0 - (radius*Omega*u0 + u0**2/2.d0)*(-cos(longitude(i,j,iPatch))*cos(latitude(i,j,iPatch))*sin(alpha) + sin(latitude(i,j,iPatch))*cos(alpha))**2 - hs(i,j,iPatch)

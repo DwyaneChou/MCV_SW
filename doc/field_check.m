@@ -2,8 +2,8 @@
 % clc
 % clear
 
-var_name = 'phiP_t';
-it       = 0*24+1;
+var_name = 'zonal_wind';
+it       = 20*24+1;
 
 nc_file = '..\run\mcv_output.nc';
 
